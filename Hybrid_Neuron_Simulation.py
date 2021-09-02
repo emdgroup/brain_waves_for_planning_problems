@@ -5,7 +5,7 @@ Author: Henry Powell and Mathias Winkel
 """
 import numpy as np
 import matplotlib.pyplot as plt
-from utils.animation import FFMPEGVideo
+from utils.animation import FFMPEGVideo, ImageStack
 
 place_cell_x = 41
 place_cell_y = 41
@@ -139,21 +139,20 @@ S = imprint_circular_kernel(S, layer_from=1, layer_to=0, radius=suppression_rang
 
 
 setups = {
-    'S maze': (
+    's_maze': (
         (slice(25, 32), slice(10, None)),
         (slice(10, 15), slice(None, 32)),
     ),
-    'central block': (
+    'central_block': (
         (slice(10, 30), slice(10, 30)),
     ),
 }
 
-
-setup = setups['S maze']
+setup = 's_maze'
 
 PC_inactive = np.ones((size, size))
 
-for region in setup:
+for region in setups[setup]:
     S[(slice(None), *region)] = 0
     PC_inactive[region] = 0
 
@@ -178,7 +177,7 @@ I = np.random.randn(n_neurons, 1).reshape(2, size, size)
 I[(0, *target_neuron)] = 10
 
 # Construct continuous attractor layer
-place_cell_synapses = np.zeros((place_cell_x * place_cell_y, place_cell_x * place_cell_y)) 
+place_cell_synapses = np.zeros((place_cell_x * place_cell_y, place_cell_x * place_cell_y))
 
 direc = np.array([10, 10]) / np.array([place_cell_x, place_cell_y])
 
@@ -189,9 +188,27 @@ place_cell_activations = np.random.uniform(0, 1 / np.sqrt(place_cell_x * place_c
 trajectory = np.zeros((size, size))
 
 plt.ion()
-fig = plt.figure(figsize=(12, 6))
+fig_vid, ax_vid = plt.subplots(nrows=2, ncols=4, squeeze=True, figsize=(10, 6))
+ax_vid[0, 0].set_title('Exci. Firing Pattern', fontsize=8)
+ax_vid[0, 1].set_title('Exci. SNN Membrane Potential', fontsize=8)
+ax_vid[0, 2].set_title('Inhi. Firing Pattern', fontsize=8)
+ax_vid[0, 3].set_title('Inhi. SNN Membrane Potential', fontsize=8)
+ax_vid[1, 0].set_title('Place Cell Activations', fontsize=8)
+ax_vid[1, 1].set_title('Overlap', fontsize=8)
+ax_vid[1, 2].set_title('Trajectory', fontsize=8)
+
+fig_pub, ax_pub = plt.subplots(nrows=2, ncols=1, squeeze=True, figsize=(3, 6))
 
 animation = FFMPEGVideo()
+pub_images = ImageStack(setup)
+
+
+def imupdate(ax, data, *args, **kwargs):
+    if hasattr(ax, 'myplot'):
+        ax.myplot.set_data(data)
+    else:
+        ax.myplot = ax.imshow(data, *args, **kwargs)
+
 
 max_plot = list()
 
@@ -202,7 +219,7 @@ for t in range(1000):
                                                            place_cell_activations)
     place_cell_activations = np.multiply(place_cell_activations, PC_inactive)
 
-    # normalize place cell activations to prevent 
+    # normalize place cell activations to prevent
     place_cell_activations /= np.max(place_cell_activations)
 
     spiking_fired = v >= 30
@@ -254,50 +271,32 @@ for t in range(1000):
         v = np.where(v_fired, v, v + (((0.04 * v**2) + (5*v) + 140 - u + total_current) / subcycle))
         u = np.where(v_fired, u, u + a * ((b*v) - u) / subcycle)
 
-    fig.clear()
-    fig.suptitle(t)
+    ############ Plots for animation ###################
+    fig_vid.suptitle(f't = {t}ms')
+    imupdate(ax_vid[0, 0], fire_grid, vmin=0, vmax=2)
+    imupdate(ax_vid[0, 1], v[0], vmin=-70, vmax=30)
+    imupdate(ax_vid[0, 2], 1 * spiking_fired[1], vmin=0, vmax=2)
+    imupdate(ax_vid[0, 3], v[1], vmin=-70, vmax=30)
+    imupdate(ax_vid[1, 0], place_cell_activations)
+    imupdate(ax_vid[1, 1], overlap)
+    imupdate(ax_vid[1, 2], trajectory, vmin=-1, vmax=1, cmap='bwr')
 
-    plt.subplot(2, 4, 1)
-    plt.title('Exci. Firing Pattern', fontsize=8)
-    plt.imshow(fire_grid, vmin=0, vmax=2)
-    plt.xticks([])
-    plt.yticks([])
+    for ax in ax_vid.flatten():
+        ax.set_xticks([])
+        ax.set_yticks([])
 
-    plt.subplot(2, 4, 2)
-    plt.title('Exci. SNN Membrane Potential', fontsize=8)
-    plt.imshow(v[0], vmin=-70, vmax=30)
-    plt.xticks([])
-    plt.yticks([])
+    plt.tight_layout()
 
-    plt.subplot(2, 4, 3)
-    plt.title('Inhi. Firing Pattern', fontsize=8)
-    plt.imshow(1 * spiking_fired[1], vmin=0, vmax=2)
-    plt.xticks([])
-    plt.yticks([])
+    ############ Plots for publication ###################
+    fig_pub.suptitle(f't = {t}ms')
+    imupdate(ax_pub[0], fire_grid, vmin=0, vmax=2)
+    imupdate(ax_pub[1], place_cell_activations)
 
-    plt.subplot(2, 4, 4)
-    plt.title('Inhi. SNN Membrane Potential', fontsize=8)
-    plt.imshow(v[1], vmin=-70, vmax=30)
-    plt.xticks([])
-    plt.yticks([])
+    for ax in ax_pub.flatten():
+        ax.set_xticks([])
+        ax.set_yticks([])
 
-    plt.subplot(2, 4, 5)
-    plt.title('Place Cell Activations', fontsize=8)
-    plt.imshow(place_cell_activations)
-    plt.xticks([])
-    plt.yticks([])
-
-    plt.subplot(2, 4, 6)
-    plt.title('Overlap', fontsize=8)
-    plt.imshow(overlap)
-    plt.xticks([])
-    plt.yticks([])
-
-    plt.subplot(2, 4, 7)
-    plt.title('Trajectory', fontsize=8)
-    plt.imshow(trajectory, vmin=-1, vmax=1, cmap='bwr')
-    plt.xticks([])
-    plt.yticks([])
+    plt.tight_layout()
 
     # plt.subplot(2,1,1)
     # if len(coords) > 0:
@@ -314,14 +313,15 @@ for t in range(1000):
     # plt.subplot(2,1,2)
     # plt.plot(max_plot)
 
+    # plt.tight_layout()
+
     plt.show()
 
-    plt.tight_layout()
-
     plt.pause(0.1)
-    animation.add_frame(fig)  # comment to prevent saving plots to disc
+    animation.add_frame(fig_vid)  # comment to prevent saving plots to disc
+    pub_images.add_frame(fig_pub)
 
-    if not plt.fignum_exists(fig.number):
+    if not plt.fignum_exists(fig_vid.number):
         print('Figure closed. Finalizing simulation.')
         break
 
