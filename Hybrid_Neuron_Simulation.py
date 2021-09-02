@@ -196,6 +196,7 @@ ax_vid[0, 3].set_title('Inhi. SNN Membrane Potential', fontsize=8)
 ax_vid[1, 0].set_title('Place Cell Activations', fontsize=8)
 ax_vid[1, 1].set_title('Overlap', fontsize=8)
 ax_vid[1, 2].set_title('Trajectory', fontsize=8)
+ax_vid[1, 3].remove()
 
 fig_pub, ax_pub = plt.subplots(nrows=2, ncols=1, squeeze=True, figsize=(3, 6))
 
@@ -298,7 +299,7 @@ for t in range(1000):
         ax.set_xticks([])
         ax.set_yticks([])
 
-    plt.tight_layout()
+    fig_vid.tight_layout()
 
     ############ Plots for publication ###################
     fig_pub.suptitle(f't = {t}ms')
@@ -309,7 +310,7 @@ for t in range(1000):
         ax.set_xticks([])
         ax.set_yticks([])
 
-    plt.tight_layout()
+    fig_pub.tight_layout()
 
     # plt.subplot(2,1,1)
     # if len(coords) > 0:
