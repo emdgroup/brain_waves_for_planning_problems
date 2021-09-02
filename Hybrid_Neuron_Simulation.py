@@ -137,17 +137,25 @@ S = imprint_circular_kernel(S, layer_from=0, layer_to=1, radius=suppression_rang
 # inhibition deactivates a local cluster
 S = imprint_circular_kernel(S, layer_from=1, layer_to=0, radius=suppression_range, max_value=-9, center_value=-9)
 
-# S maze
-S[:, 25:32, 10:, :, :, :] = 0
-S[:, 10:15, :32, :, :, :] = 0
-PC_inactive = np.ones((size, size))
-PC_inactive[25:32, 10:] = 0
-PC_inactive[10:15, :32] = 0
 
-# # central block maze
-# S[:, 10:30, 10:30, :, :, :] = 0
-# PC_inactive = np.ones((size, size))
-# PC_inactive[10:30, 10:30] = 0
+setups = {
+    'S maze': (
+        (slice(25, 32), slice(10, None)),
+        (slice(10, 15), slice(None, 32)),
+    ),
+    'central block': (
+        (slice(10, 30), slice(10, 30)),
+    ),
+}
+
+
+setup = setups['S maze']
+
+PC_inactive = np.ones((size, size))
+
+for region in setup:
+    S[(slice(None), *region)] = 0
+    PC_inactive[region] = 0
 
 S *= 80 # 45
 
