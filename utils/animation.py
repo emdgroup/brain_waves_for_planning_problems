@@ -105,3 +105,24 @@ class FFMPEGVideo(object):
                           .format(ffmpeg.returncode, ' '.join(ffmpeg.args)))
         elif not keep_frame_images:
             shutil.rmtree(self._workdir)
+
+
+class ImageStack():
+    def __init__(self, name: str, file_type: str = 'pdf'):
+        self._framecounter = 0
+        self._file_type = file_type
+        self._workdir = os.path.join(os.getcwd(), name)
+
+        if os.path.exists(self._workdir):
+            shutil.rmtree(self._workdir)
+        os.makedirs(self._workdir)
+
+    def add_frame(self, frame):
+        filename = os.path.join(self._workdir, 'frame_{:08d}.{}'.format(self._framecounter, self._file_type))
+
+        if isinstance(frame, Figure):
+            frame.savefig(filename, transparent=False)  # ffmpeg cannot deal properly with transparent pngs
+        else:
+            frame.save(filename)
+
+        self._framecounter += 1
