@@ -204,10 +204,23 @@ pub_images = ImageStack(setup)
 
 
 def imupdate(ax, data, *args, **kwargs):
+
+    # mask geometry to make the setup visible in the plot
+    mask = np.zeros_like(data)
+    data_plot = data.copy().astype(float)
+    for region in setups[setup]:
+        mask[region] = 1
+        data_plot[region] = np.nan
+
     if hasattr(ax, 'myplot'):
-        ax.myplot.set_data(data)
+        ax.myplot.set_data(data_plot)
     else:
-        ax.myplot = ax.imshow(data, *args, **kwargs)
+        ax.myplot = ax.imshow(data_plot, *args, **kwargs)
+
+    if hasattr(ax, 'myhatch'):
+        for coll in ax.myhatch.collections:
+            ax.collections.remove(coll)
+    ax.myhatch = ax.contourf(mask, 1, hatches=['', '////'], alpha=0)
 
 
 max_plot = list()
@@ -225,7 +238,7 @@ for t in range(1000):
     spiking_fired = v >= 30
     spiking_fired_excite = np.where(v[:ne] >= 30)[0]
 
-    fire_grid = 1 * spiking_fired[0]
+    fire_grid = 1. * spiking_fired[0]
     # fire_grid[target_neuron] = 2.0
 
     overlap = np.multiply(place_cell_activations, fire_grid)
@@ -309,7 +322,7 @@ for t in range(1000):
     # plt.xlabel("Time (ms)")
     # plt.ylabel("Neuron Index")
 
-    # max_plot.append(np.sum(fire_grid))
+    # max_plot.append(np.sum(fire_grid_plot))
     # plt.subplot(2,1,2)
     # plt.plot(max_plot)
 
