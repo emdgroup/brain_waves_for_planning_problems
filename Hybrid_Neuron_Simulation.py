@@ -99,13 +99,18 @@ ne = size * size
 ni = ne
 n_neurons = ne + ni
 
-# excitatory neurons
-# re = np.zeros((ne, 1)) # fix this (1/0)
-re = np.random.uniform(0, 1, (ne, 1))
+randomize_neuron_parameters = True
 
-# inhibitory neurons
-# ri = np.zeros((ni, 1)) # fix this (1/0)
-ri = np.random.uniform(0, 1, (ne, 1))
+if randomize_neuron_parameters:
+    # make results reproducible
+    np.random.seed(7)
+    # excitatory neurons
+    re = np.random.uniform(0, 1, (ne, 1))
+    # inhibitory neurons
+    ri = np.random.uniform(0, 1, (ne, 1))
+else:
+    re = np.zeros((ne, 1))
+    ri = np.ones((ni, 1))
 
 a = np.append(np.array([0.02 * np.ones((ne, 1))]),                # time scale of the recovery variable u
               np.array([0.02 + 0.08 * ri]))[:, np.newaxis]
@@ -174,14 +179,14 @@ target_neuron = (40, 40)
 # I = np.zeros((n_neurons, 1)).reshape(2, size, size)
 I = np.random.randn(n_neurons, 1).reshape(2, size, size)
 # I[start_neuron] = 10
-I[(0, *target_neuron)] = 10
+I[(0, *target_neuron)] = 25
 
 # Construct continuous attractor layer
 place_cell_synapses = np.zeros((place_cell_x * place_cell_y, place_cell_x * place_cell_y))
 
 direc = np.array([10, 10]) / np.array([place_cell_x, place_cell_y])
 
-np.random.seed(2) 
+np.random.seed(2)
 place_cell_activations = np.random.uniform(0, 1 / np.sqrt(place_cell_x * place_cell_y),
                                            place_cell_x * place_cell_y).reshape(place_cell_x, place_cell_y)
 
@@ -226,7 +231,7 @@ def imupdate(ax, data, *args, **kwargs):
 
 max_plot = list()
 
-for t in range(1000):
+for t in range(2500):
     place_cell_synapses = update_place_cell_synapses(direc, place_cell_synapses)
 
     place_cell_activations = update_place_cell_activations(place_cell_synapses,
@@ -339,4 +344,4 @@ for t in range(1000):
         print('Figure closed. Finalizing simulation.')
         break
 
-animation.save(__file__, fps=4, keep_frame_images=False)
+animation.save(setup, fps=4, keep_frame_images=False)
