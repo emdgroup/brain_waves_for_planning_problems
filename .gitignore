@@ -1,2 +1,8 @@
 __pycache__
 *.mp4
+FFMPEGVideo.*
+central_block*
+s_maze*
+empty*
+.vscode
+.DS_Store
