@@ -21,11 +21,11 @@ SETUPS = {
     'central_block': {
         'size': 41,
         'blocked': (
-            (slice(10, 30), slice(10, 30)),
+            (slice(8, 30), slice(8, 30)),
             ),
         'target_neuron': (40, 40),
-        't_max': 5000,
-        'randomize_neurons': False,
+        't_max': 2750,
+        'randomize_neurons': True,
         'thalamic_input': False,
         },
 }
