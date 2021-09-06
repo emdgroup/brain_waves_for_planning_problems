@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from utils.animation import FFMPEGVideo, ImageStack
 from setups import SETUPS
 
-selected_setup = 's_maze'
+selected_setup = 'central_block'
 
 try:
     setup = SETUPS[selected_setup]
@@ -305,8 +305,8 @@ for t in range(setup['t_max']):
 
         ############ Plots for publication ###################
         fig_pub.suptitle(f't = {t}ms', fontsize=24)
-        imupdate(ax_pub[0], fire_grid, vmin=0, vmax=2)
-        imupdate(ax_pub[1], place_cell_activations)
+        imupdate(ax_pub[0], fire_grid, vmin=0, vmax=2, cmap='Greys')
+        imupdate(ax_pub[1], place_cell_activations, cmap='Greys')
 
         for ax in ax_pub.flatten():
             ax.set_xticks([])
