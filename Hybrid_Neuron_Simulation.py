@@ -286,55 +286,56 @@ for t in range(setup['t_max']):
         v = np.where(v_fired, v, v + (((0.04 * v**2) + (5*v) + 140 - u + total_current) / subcycle))
         u = np.where(v_fired, u, u + a * ((b*v) - u) / subcycle)
 
-    ############ Plots for animation ###################
-    fig_vid.suptitle(f't = {t}ms')
-    imupdate(ax_vid[0, 0], fire_grid, vmin=0, vmax=2)
-    imupdate(ax_vid[0, 1], v[0], vmin=-70, vmax=30)
-    imupdate(ax_vid[0, 2], 1 * spiking_fired[1], vmin=0, vmax=2)
-    imupdate(ax_vid[0, 3], v[1], vmin=-70, vmax=30)
-    imupdate(ax_vid[1, 0], place_cell_activations)
-    imupdate(ax_vid[1, 1], overlap)
-    imupdate(ax_vid[1, 2], trajectory, vmin=-1, vmax=1, cmap='bwr')
+    if t % 10 == 0:
+        ############ Plots for animation ###################
+        fig_vid.suptitle(f't = {t}ms')
+        imupdate(ax_vid[0, 0], fire_grid, vmin=0, vmax=2)
+        imupdate(ax_vid[0, 1], v[0], vmin=-70, vmax=30)
+        imupdate(ax_vid[0, 2], 1 * spiking_fired[1], vmin=0, vmax=2)
+        imupdate(ax_vid[0, 3], v[1], vmin=-70, vmax=30)
+        imupdate(ax_vid[1, 0], place_cell_activations)
+        imupdate(ax_vid[1, 1], overlap)
+        imupdate(ax_vid[1, 2], trajectory, vmin=-1, vmax=1, cmap='bwr')
 
-    for ax in ax_vid.flatten():
-        ax.set_xticks([])
-        ax.set_yticks([])
+        for ax in ax_vid.flatten():
+            ax.set_xticks([])
+            ax.set_yticks([])
 
-    fig_vid.tight_layout()
+        fig_vid.tight_layout()
 
-    ############ Plots for publication ###################
-    fig_pub.suptitle(f't = {t}ms', fontsize=24)
-    imupdate(ax_pub[0], fire_grid, vmin=0, vmax=2)
-    imupdate(ax_pub[1], place_cell_activations)
+        ############ Plots for publication ###################
+        fig_pub.suptitle(f't = {t}ms', fontsize=24)
+        imupdate(ax_pub[0], fire_grid, vmin=0, vmax=2)
+        imupdate(ax_pub[1], place_cell_activations)
 
-    for ax in ax_pub.flatten():
-        ax.set_xticks([])
-        ax.set_yticks([])
+        for ax in ax_pub.flatten():
+            ax.set_xticks([])
+            ax.set_yticks([])
 
-    fig_pub.tight_layout()
+        fig_pub.tight_layout()
 
-    # plt.subplot(2,1,1)
-    # if len(coords) > 0:
-    #     y, x = zip(*coords)
-    #     plt.scatter(x, np.ravel_multi_index(np.array(y).T, (41,41)), s=0.002)
-    # else:
-    #     plt.scatter((), ())
-    # plt.xlim(0, 1000)
-    # plt.ylim(0, size*size)
-    # plt.xlabel("Time (ms)")
-    # plt.ylabel("Neuron Index")
+        # plt.subplot(2,1,1)
+        # if len(coords) > 0:
+        #     y, x = zip(*coords)
+        #     plt.scatter(x, np.ravel_multi_index(np.array(y).T, (41,41)), s=0.002)
+        # else:
+        #     plt.scatter((), ())
+        # plt.xlim(0, 1000)
+        # plt.ylim(0, size*size)
+        # plt.xlabel("Time (ms)")
+        # plt.ylabel("Neuron Index")
 
-    # max_plot.append(np.sum(fire_grid_plot))
-    # plt.subplot(2,1,2)
-    # plt.plot(max_plot)
+        # max_plot.append(np.sum(fire_grid_plot))
+        # plt.subplot(2,1,2)
+        # plt.plot(max_plot)
 
-    # plt.tight_layout()
+        # plt.tight_layout()
 
-    plt.show()
+        plt.show()
 
-    plt.pause(0.1)
-    animation.add_frame(fig_vid)  # comment to prevent saving plots to disc
-    pub_images.add_frame(fig_pub)
+        plt.pause(0.1)
+        animation.add_frame(fig_vid)  # comment to prevent saving plots to disc
+        pub_images.add_frame(fig_pub)
 
     if not plt.fignum_exists(fig_vid.number):
         print('Figure closed. Finalizing simulation.')
