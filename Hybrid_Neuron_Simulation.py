@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from utils.animation import FFMPEGVideo, ImageStack
 from setups import SETUPS
 
-selected_setup = 'central_block'
+selected_setup = 's_maze'
 
 try:
     setup = SETUPS[selected_setup]
@@ -193,8 +193,13 @@ ax_vid[1, 3].remove()
 
 fig_pub, ax_pub = plt.subplots(nrows=2, ncols=1, squeeze=True, figsize=(3, 6))
 
+fig_pub2, ax_pub2 = plt.subplots(nrows=1, ncols=2, squeeze=True, figsize=(6, 3))
+ax_pub2[0].set_title('Excitatory Firing Pattern', fontsize=14)
+ax_pub2[1].set_title('Inhibitory Firing Pattern', fontsize=14)
+
 animation = FFMPEGVideo()
 pub_images = ImageStack(selected_setup)
+pub_images2 = ImageStack(selected_setup + '.exci_inhi')
 
 
 def imupdate(ax, data, *args, **kwargs):
@@ -314,6 +319,15 @@ for t in range(setup['t_max']):
 
         fig_pub.tight_layout()
 
+        imupdate(ax_pub2[0], fire_grid, vmin=0, vmax=2, cmap='Greys')
+        imupdate(ax_pub2[1], 1 * spiking_fired[1], vmin=0, vmax=2, cmap='Greys')
+
+        for ax in ax_pub2.flatten():
+            ax.set_xticks([])
+            ax.set_yticks([])
+
+        fig_pub2.tight_layout()
+
         # plt.subplot(2,1,1)
         # if len(coords) > 0:
         #     y, x = zip(*coords)
@@ -336,6 +350,7 @@ for t in range(setup['t_max']):
         plt.pause(0.1)
         animation.add_frame(fig_vid)  # comment to prevent saving plots to disc
         pub_images.add_frame(fig_pub)
+        pub_images2.add_frame(fig_pub2)
 
     if not plt.fignum_exists(fig_vid.number):
         print('Figure closed. Finalizing simulation.')
