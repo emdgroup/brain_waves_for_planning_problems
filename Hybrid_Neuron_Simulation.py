@@ -6,6 +6,14 @@ Author: Henry Powell and Mathias Winkel
 import numpy as np
 import matplotlib.pyplot as plt
 from utils.animation import FFMPEGVideo, ImageStack
+from setups import SETUPS
+
+selected_setup = 's_maze'
+
+try:
+    setup = SETUPS[selected_setup]
+except KeyError as e:
+    raise ValueError('Selected setup "{}" does not exist. Chose one of \n\t{}'.format(selected_setup, '\n\t'.join(SETUPS.keys()))) from e
 
 place_cell_x = 41
 place_cell_y = 41
@@ -94,14 +102,12 @@ def imprint_circular_kernel(field: np.array, layer_from: int, layer_to: int, rad
 
 
 # Construct spiking neuron layer
-size = 41
+size = setup['size']
 ne = size * size
 ni = ne
 n_neurons = ne + ni
 
-randomize_neuron_parameters = True
-
-if randomize_neuron_parameters:
+if setup['randomize_neurons']:
     # make results reproducible
     np.random.seed(7)
     # excitatory neurons
@@ -141,27 +147,15 @@ S = imprint_circular_kernel(S, layer_from=0, layer_to=0, radius=excitation_range
 S = imprint_circular_kernel(S, layer_from=0, layer_to=1, radius=suppression_range, max_value=0.5, center_value=0)
 # inhibition deactivates a local cluster
 S = imprint_circular_kernel(S, layer_from=1, layer_to=0, radius=suppression_range, max_value=-9, center_value=-9)
-
-
-setups = {
-    's_maze': (
-        (slice(25, 32), slice(10, None)),
-        (slice(10, 15), slice(None, 32)),
-    ),
-    'central_block': (
-        (slice(10, 30), slice(10, 30)),
-    ),
-}
-
-setup = 's_maze'
+# some rescaling as connections between nodes are sparse
+S *= 50
 
 PC_inactive = np.ones((size, size))
 
-for region in setups[setup]:
+for region in setup['blocked']:
     S[(slice(None), *region)] = 0
     PC_inactive[region] = 0
-
-S *= 80 # 45
+target_neuron = setup['target_neuron']
 
 v = -65 * np.ones((ne+ni, 1)).reshape((2, size, size))
 u = b*v
@@ -174,12 +168,6 @@ time[:] = np.nan
 n = 1
 
 coords = list()
-
-target_neuron = (40, 40)
-# I = np.zeros((n_neurons, 1)).reshape(2, size, size)
-I = np.random.randn(n_neurons, 1).reshape(2, size, size)
-# I[start_neuron] = 10
-I[(0, *target_neuron)] = 25
 
 # Construct continuous attractor layer
 place_cell_synapses = np.zeros((place_cell_x * place_cell_y, place_cell_x * place_cell_y))
@@ -206,7 +194,7 @@ ax_vid[1, 3].remove()
 fig_pub, ax_pub = plt.subplots(nrows=2, ncols=1, squeeze=True, figsize=(3, 6))
 
 animation = FFMPEGVideo()
-pub_images = ImageStack(setup)
+pub_images = ImageStack(selected_setup)
 
 
 def imupdate(ax, data, *args, **kwargs):
@@ -214,7 +202,7 @@ def imupdate(ax, data, *args, **kwargs):
     # mask geometry to make the setup visible in the plot
     mask = np.zeros_like(data)
     data_plot = data.copy().astype(float)
-    for region in setups[setup]:
+    for region in setup['blocked']:
         mask[region] = 1
         data_plot[region] = np.nan
 
@@ -231,7 +219,15 @@ def imupdate(ax, data, *args, **kwargs):
 
 max_plot = list()
 
-for t in range(2500):
+for t in range(setup['t_max']):
+    if setup['thalamic_input']:
+        I = np.random.randn(n_neurons, 1).reshape(2, size, size)
+    else:
+        I = np.zeros((n_neurons, 1)).reshape(2, size, size)
+
+    # external drive
+    I[(0, *target_neuron)] = 25
+
     place_cell_synapses = update_place_cell_synapses(direc, place_cell_synapses)
 
     place_cell_activations = update_place_cell_activations(place_cell_synapses,
@@ -307,7 +303,7 @@ for t in range(2500):
     fig_vid.tight_layout()
 
     ############ Plots for publication ###################
-    fig_pub.suptitle(f't = {t}ms')
+    fig_pub.suptitle(f't = {t}ms', fontsize=24)
     imupdate(ax_pub[0], fire_grid, vmin=0, vmax=2)
     imupdate(ax_pub[1], place_cell_activations)
 
@@ -344,4 +340,4 @@ for t in range(2500):
         print('Figure closed. Finalizing simulation.')
         break
 
-animation.save(setup, fps=4, keep_frame_images=False)
+animation.save(selected_setup, fps=4, keep_frame_images=False)
