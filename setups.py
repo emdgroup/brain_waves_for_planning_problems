@@ -2,6 +2,7 @@ SETUPS = {
     'empty': {
         'size': 101,
         'blocked': tuple(),
+        'start_neuron': (8, 8),
         'target_neuron': (50, 50),
         't_max': 100,
         'randomize_neurons': False,
@@ -13,6 +14,7 @@ SETUPS = {
             (slice(25, 32), slice(10, None)),
             (slice(10, 15), slice(None, 32)),
             ),
+        'start_neuron': (8, 8),
         'target_neuron': (40, 40),
         't_max': 1300,
         'randomize_neurons': False,
@@ -23,6 +25,7 @@ SETUPS = {
         'blocked': (
             (slice(8, 30), slice(8, 30)),
             ),
+        'start_neuron': (8, 8),
         'target_neuron': (40, 40),
         't_max': 2750,
         'randomize_neurons': True,
@@ -97,6 +100,7 @@ SETUPS = {
             (slice(58, 60), slice(42, 44)),
             (slice(58, 60), slice(50, 52))
         ),
+        'start_neuron': (8, 8),
         'target_neuron': (58, 58),
         't_max': 2500,
         'randomize_neurons': False,
