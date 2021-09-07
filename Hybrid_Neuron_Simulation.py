@@ -16,8 +16,8 @@ try:
 except KeyError as e:
     raise ValueError('Selected setup "{}" does not exist. Chose one of \n\t{}'.format(selected_setup, '\n\t'.join(SETUPS.keys()))) from e
 
-place_cell_x = 41
-place_cell_y = 41
+place_cell_x = setup['size']
+place_cell_y = setup['size']
 
 place_cell_synapse_len = place_cell_x * place_cell_y
 
