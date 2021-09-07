@@ -3,13 +3,17 @@ Attractor Network for 2DoF Robot Arm
 
 Author: Henry Powell and Mathias Winkel
 """
+import sys
 import copy
 import numpy as np
 import matplotlib.pyplot as plt
 from utils.animation import FFMPEGVideo, ImageStack
 from setups import SETUPS
 
-selected_setup = 'complex_maze'
+if len(sys.argv) > 1:
+    selected_setup = sys.argv[1]
+else:
+    selected_setup = 's_maze'
 
 try:
     setup = SETUPS[selected_setup]
