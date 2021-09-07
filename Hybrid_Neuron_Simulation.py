@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from utils.animation import FFMPEGVideo, ImageStack
 from setups import SETUPS
 
-selected_setup = 's_maze'
+selected_setup = 'complex_maze'
 
 try:
     setup = SETUPS[selected_setup]
@@ -19,11 +19,9 @@ except KeyError as e:
 place_cell_x = setup['size']
 place_cell_y = setup['size']
 
-place_cell_synapse_len = place_cell_x * place_cell_y
-
-J = 12 #2.5
-T = 0.05 #0.05
-sigma = 0.03 #0.08
+J = 12  # 2.5
+T = 0.05  # 0.05
+sigma = 0.03  # 0.08
 
 tau = 0.8
 
@@ -125,7 +123,7 @@ b = np.append(np.array([0.2 * np.ones((ne, 1))]),                 # sensitivity 
               np.array([0.25 - 0.05 * ri]))[:, np.newaxis]        # fluctuations of the membrane potential v.
 
 c = np.append(np.array([-65 + 15 * re**2]),                       # after-spike reset value of the membrane
-              np.array([-65 * np.ones((ni, 1))]))[:, np.newaxis]  # potential v caused by the fast high-threshold K+ conductances.
+              np.array([-65 * np.ones((ni, 1))]))[:, np.newaxis]  # potential v caused by fast high-threshold K+ conductances.
 
 d = np.append(np.array([8 - 6 * re**2]),                          # after-spike reset of the recovery variable
               np.array([2*np.ones((ni, 1))]))[:, np.newaxis]      # u caused by slow high-threshold Na+ and K+ conductances.
@@ -161,22 +159,15 @@ v = -65 * np.ones((ne+ni, 1)).reshape((2, size, size))
 u = b*v
 firings = np.empty((0, 2))
 
-activ = list()
-time = np.empty((1000))
-time[:] = np.nan
-
 n = 1
-
-coords = list()
 
 # Construct continuous attractor layer
 place_cell_synapses = np.zeros((place_cell_x * place_cell_y, place_cell_x * place_cell_y))
 
 direc = np.array([10, 10]) / np.array([place_cell_x, place_cell_y])
 
-np.random.seed(2)
-place_cell_activations = np.random.uniform(0, 1 / np.sqrt(place_cell_x * place_cell_y),
-                                           place_cell_x * place_cell_y).reshape(place_cell_x, place_cell_y)
+place_cell_activations = np.zeros((place_cell_x, place_cell_y))
+place_cell_activations[setup['start_neuron']] = 1.
 
 trajectory = np.zeros((size, size))
 
@@ -292,7 +283,6 @@ for t in range(setup['t_max']):
         v[i] = c[i]
         u[i] += d[i]
         zs += S[(slice(None), )*3 + i]
-        coords.append((i[1:], t))
 
     total_current = np.maximum(I + zs, 0)
 
@@ -307,8 +297,8 @@ for t in range(setup['t_max']):
         v = np.where(v_fired, v, v + (((0.04 * v**2) + (5*v) + 140 - u + total_current) / subcycle))
         u = np.where(v_fired, u, u + a * ((b*v) - u) / subcycle)
 
-    if t % 10 == 0:
-        ############ Plots for animation ###################
+    if t % 1 == 0:
+        # ########### Plots for animation ###################
         fig_vid.suptitle(f't = {t}ms')
         imupdate(ax_vid[0, 0], fire_grid, vmin=0, vmax=2)
         imupdate(ax_vid[0, 1], v[0], vmin=-70, vmax=30)
@@ -324,7 +314,7 @@ for t in range(setup['t_max']):
 
         fig_vid.tight_layout()
 
-        ############ Plots for publication ###################
+        # ########### Plots for publication ###################
         fig_pub.suptitle(f't = {t}ms', fontsize=24)
         imupdate(ax_pub, place_cell_activations, cmap='Greys', overlay=fire_grid)
 
@@ -342,23 +332,6 @@ for t in range(setup['t_max']):
             ax.set_yticks([])
 
         fig_pub2.tight_layout()
-
-        # plt.subplot(2,1,1)
-        # if len(coords) > 0:
-        #     y, x = zip(*coords)
-        #     plt.scatter(x, np.ravel_multi_index(np.array(y).T, (41,41)), s=0.002)
-        # else:
-        #     plt.scatter((), ())
-        # plt.xlim(0, 1000)
-        # plt.ylim(0, size*size)
-        # plt.xlabel("Time (ms)")
-        # plt.ylabel("Neuron Index")
-
-        # max_plot.append(np.sum(fire_grid_plot))
-        # plt.subplot(2,1,2)
-        # plt.plot(max_plot)
-
-        # plt.tight_layout()
 
         plt.show()
 
