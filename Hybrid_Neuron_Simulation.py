@@ -3,6 +3,7 @@ Attractor Network for 2DoF Robot Arm
 
 Author: Henry Powell and Mathias Winkel
 """
+import copy
 import numpy as np
 import matplotlib.pyplot as plt
 from utils.animation import FFMPEGVideo, ImageStack
@@ -67,7 +68,6 @@ def update_place_cell_activations(place_cell_synapses: np.ndarray = None,
 
     if summed_activations > 0:
         place_cell_activations = (1 - tau) * B + (tau * (B/summed_activations))
-
     else:
         place_cell_activations = np.zeros_like(B)
 
@@ -191,7 +191,7 @@ ax_vid[1, 1].set_title('Overlap', fontsize=8)
 ax_vid[1, 2].set_title('Trajectory', fontsize=8)
 ax_vid[1, 3].remove()
 
-fig_pub, ax_pub = plt.subplots(nrows=2, ncols=1, squeeze=True, figsize=(3, 6))
+fig_pub, ax_pub = plt.subplots(nrows=1, ncols=1, squeeze=True, figsize=(3, 3.25))
 
 fig_pub2, ax_pub2 = plt.subplots(nrows=1, ncols=2, squeeze=True, figsize=(6, 3))
 ax_pub2[0].set_title('Excitatory Firing Pattern', fontsize=14)
@@ -201,8 +201,11 @@ animation = FFMPEGVideo()
 pub_images = ImageStack(selected_setup)
 pub_images2 = ImageStack(selected_setup + '.exci_inhi')
 
+my_cmap = copy.copy(plt.cm.get_cmap('gray'))  # get a copy of the gray color map
+my_cmap.set_bad(alpha=0)  # set how the colormap handles 'bad' values
 
-def imupdate(ax, data, *args, **kwargs):
+
+def imupdate(ax, data, overlay=None, *args, **kwargs):
 
     # mask geometry to make the setup visible in the plot
     mask = np.zeros_like(data)
@@ -211,10 +214,23 @@ def imupdate(ax, data, *args, **kwargs):
         mask[region] = 1
         data_plot[region] = np.nan
 
+    if overlay is not None:
+        overlay_tmp = overlay.copy()
+        overlay_tmp[overlay_tmp == 0] = np.nan
+
     if hasattr(ax, 'myplot'):
         ax.myplot.set_data(data_plot)
+
+        if overlay is not None:
+            ax.myoverlay.set_data(overlay_tmp)
     else:
         ax.myplot = ax.imshow(data_plot, *args, **kwargs)
+        if overlay is not None:
+            ax.myoverlay = ax.imshow(overlay_tmp, vmin=0, vmax=2, cmap=my_cmap)
+        ax.myarrow = ax.annotate("",
+                                 xy=(setup['target_neuron'][0]+.5, setup['target_neuron'][1]+.5),
+                                 xytext=(-20, 50), textcoords='offset pixels',
+                                 arrowprops=dict(arrowstyle="->"))
 
     if hasattr(ax, 'myhatch'):
         for coll in ax.myhatch.collections:
@@ -310,10 +326,9 @@ for t in range(setup['t_max']):
 
         ############ Plots for publication ###################
         fig_pub.suptitle(f't = {t}ms', fontsize=24)
-        imupdate(ax_pub[0], fire_grid, vmin=0, vmax=2, cmap='Greys')
-        imupdate(ax_pub[1], place_cell_activations, cmap='Greys')
+        imupdate(ax_pub, place_cell_activations, cmap='Greys', overlay=fire_grid)
 
-        for ax in ax_pub.flatten():
+        for ax in [ax_pub]:
             ax.set_xticks([])
             ax.set_yticks([])
 
