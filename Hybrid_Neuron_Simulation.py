@@ -301,7 +301,7 @@ for t in range(setup['t_max']):
         v = np.where(v_fired, v, v + (((0.04 * v**2) + (5*v) + 140 - u + total_current) / subcycle))
         u = np.where(v_fired, u, u + a * ((b*v) - u) / subcycle)
 
-    if t % 1 == 0:
+    if t % 10 == 0:
         # ########### Plots for animation ###################
         fig_vid.suptitle(f't = {t}ms')
         imupdate(ax_vid[0, 0], fire_grid, vmin=0, vmax=2)
