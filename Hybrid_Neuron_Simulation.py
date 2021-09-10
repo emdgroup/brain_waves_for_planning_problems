@@ -168,8 +168,6 @@ n = 1
 # Construct continuous attractor layer
 place_cell_synapses = np.zeros((place_cell_x * place_cell_y, place_cell_x * place_cell_y))
 
-direc = np.array([10, 10]) / np.array([place_cell_x, place_cell_y])
-
 place_cell_activations = np.zeros((place_cell_x, place_cell_y))
 place_cell_activations[setup['start_neuron']] = 1.
 
@@ -235,6 +233,12 @@ def imupdate(ax, data, overlay=None, *args, **kwargs):
 
 max_plot = list()
 
+direc = np.array([0, 0])
+direc_cooldown = 12
+last_direc_uphold = 0
+
+coords = np.asarray(np.meshgrid(range(place_cell_x), range(place_cell_y))).T
+
 for t in range(setup['t_max']):
     if setup['thalamic_input']:
         I = np.random.randn(n_neurons, 1).reshape(2, size, size)
@@ -244,7 +248,7 @@ for t in range(setup['t_max']):
     # external drive
     I[(0, *target_neuron)] = 25
 
-    place_cell_synapses = update_place_cell_synapses(direc, place_cell_synapses)
+    place_cell_synapses = update_place_cell_synapses(-direc / np.array([place_cell_x, place_cell_y]), place_cell_synapses)
 
     place_cell_activations = update_place_cell_activations(place_cell_synapses,
                                                            place_cell_activations)
@@ -257,31 +261,9 @@ for t in range(setup['t_max']):
     spiking_fired_excite = np.where(v[:ne] >= 30)[0]
 
     fire_grid = 1. * spiking_fired[0]
-    # fire_grid[target_neuron] = 2.0
-
-    overlap = np.multiply(place_cell_activations, fire_grid)
-    overlap_coordinates = np.argwhere(overlap > 0)
-
-    if len(overlap_coordinates) == 0:
-        direc = np.array([0, 0])
-    else:
-        place_cell_peak = np.unravel_index(np.argmax(place_cell_activations), place_cell_activations.shape)
-        average_spiking_pos = np.mean(overlap_coordinates, axis=0)
-        vec = place_cell_peak - average_spiking_pos
-        norm = np.linalg.norm(vec)
-        if norm == 0:
-            direc = np.array([0, 0])
-        else:
-            direc = vec / np.linalg.norm(vec)
-            direc = direc / np.array([place_cell_x, place_cell_y])
-
-        trajectory *= 0.95
-        trajectory[tuple(np.round(average_spiking_pos).astype(int))] = 1.
-        trajectory[place_cell_peak] = -1.
-
-    zs = np.zeros((2, size, size))
 
     # reset SNN neurons that spiked and compute their output current towards the other neurons
+    zs = np.zeros((2, size, size))
     for _i in np.argwhere(spiking_fired):
         i = tuple(_i)
         v[i] = c[i]
@@ -290,10 +272,30 @@ for t in range(setup['t_max']):
 
     total_current = np.maximum(I + zs, 0)
 
-    # suppress SNN neuron activity in overlap region with place cells
-    suppression_range = 5
-    for i in overlap_coordinates:
-        total_current[0, i[0]-suppression_range:i[0]+suppression_range+1, i[1]-suppression_range:i[1]+suppression_range+1] = 0
+    if last_direc_uphold > 0:
+        last_direc_uphold -= 1
+        print(last_direc_uphold)
+
+    # compute weighted average direction vector
+    place_cell_peak = np.asarray(np.unravel_index(np.argmax(place_cell_activations), place_cell_activations.shape))
+    overlap = np.multiply(place_cell_activations, fire_grid)
+    total = np.sum(overlap)
+
+    if total > 0:
+        delta = coords - place_cell_peak[np.newaxis, np.newaxis, :]
+        direc = np.sum(delta * overlap[..., np.newaxis], axis=(0, 1)) / total
+
+        if last_direc_uphold == 0:
+            last_direc_uphold = direc_cooldown
+        else:
+            direc = np.array([0, 0])
+    else:
+        direc = np.array([0, 0])
+
+    # record trajectory for plotting
+    trajectory *= 0.9
+    trajectory[tuple(np.round(place_cell_peak + direc).astype(int))] = 1.  # if direc == 0 this will be overwritten by the next line
+    trajectory[tuple(place_cell_peak)] = -1.
 
     subcycle = 2
     for update in range(subcycle):
@@ -301,7 +303,7 @@ for t in range(setup['t_max']):
         v = np.where(v_fired, v, v + (((0.04 * v**2) + (5*v) + 140 - u + total_current) / subcycle))
         u = np.where(v_fired, u, u + a * ((b*v) - u) / subcycle)
 
-    if t % 10 == 0:
+    if t % 1 == 0:
         # ########### Plots for animation ###################
         fig_vid.suptitle(f't = {t}ms')
         imupdate(ax_vid[0, 0], fire_grid, vmin=0, vmax=2)
