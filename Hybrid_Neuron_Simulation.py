@@ -28,6 +28,7 @@ T = 0.05  # 0.05
 sigma = 0.03  # 0.08
 
 tau = 0.8
+direc_cooldown_period = 12
 
 
 def update_place_cell_synapses(x: np.ndarray = None,
@@ -234,8 +235,7 @@ def imupdate(ax, data, overlay=None, *args, **kwargs):
 max_plot = list()
 
 direc = np.array([0, 0])
-direc_cooldown = 12
-last_direc_uphold = 0
+direc_update_delay = 0
 
 coords = np.asarray(np.meshgrid(range(place_cell_x), range(place_cell_y))).T
 
@@ -272,28 +272,23 @@ for t in range(setup['t_max']):
 
     total_current = np.maximum(I + zs, 0)
 
-    if last_direc_uphold > 0:
-        last_direc_uphold -= 1
-        print(last_direc_uphold)
+    if direc_update_delay > 0:
+        direc_update_delay -= 1
 
     # compute weighted average direction vector
     place_cell_peak = np.asarray(np.unravel_index(np.argmax(place_cell_activations), place_cell_activations.shape))
     overlap = np.multiply(place_cell_activations, fire_grid)
     total = np.sum(overlap)
 
-    if total > 0:
+    if total > 0 and direc_update_delay == 0:
         delta = coords - place_cell_peak[np.newaxis, np.newaxis, :]
         direc = np.sum(delta * overlap[..., np.newaxis], axis=(0, 1)) / total
-
-        if last_direc_uphold == 0:
-            last_direc_uphold = direc_cooldown
-        else:
-            direc = np.array([0, 0])
+        direc_update_delay = direc_cooldown_period
     else:
         direc = np.array([0, 0])
 
     # record trajectory for plotting
-    trajectory *= 0.9
+    trajectory *= 0.99
     trajectory[tuple(np.round(place_cell_peak + direc).astype(int))] = 1.  # if direc == 0 this will be overwritten by the next line
     trajectory[tuple(place_cell_peak)] = -1.
 
