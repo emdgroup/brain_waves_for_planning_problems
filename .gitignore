@@ -4,6 +4,7 @@ FFMPEGVideo.*
 central_block*
 s_maze*
 empty*
+simple*
 .vscode
 .DS_Store
 complex_maze*
