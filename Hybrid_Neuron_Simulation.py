@@ -158,7 +158,7 @@ PC_inactive = np.ones((size, size))
 for region in setup['blocked']:
     S[(slice(None), *region)] = 0
     PC_inactive[region] = 0
-target_neuron = setup['target_neuron']
+target_neurons = setup['target_neurons']
 
 v = -65 * np.ones((ne+ni, 1)).reshape((2, size, size))
 u = b*v
@@ -170,7 +170,10 @@ n = 1
 place_cell_synapses = np.zeros((place_cell_x * place_cell_y, place_cell_x * place_cell_y))
 
 place_cell_activations = np.zeros((place_cell_x, place_cell_y))
-place_cell_activations[setup['start_neuron']] = 1.
+start_neuron = setup['start_neuron']
+
+if start_neuron is not None:
+    place_cell_activations[start_neuron] = 1.
 
 trajectory = np.zeros((size, size))
 
@@ -221,10 +224,10 @@ def imupdate(ax, data, overlay=None, *args, **kwargs):
         ax.myplot = ax.imshow(data_plot, *args, **kwargs)
         if overlay is not None:
             ax.myoverlay = ax.imshow(overlay_tmp, vmin=0, vmax=2, cmap=my_cmap)
-        ax.myarrow = ax.annotate("",
-                                 xy=(setup['target_neuron'][0]+.5, setup['target_neuron'][1]+.5),
-                                 xytext=(-20, 50), textcoords='offset pixels',
-                                 arrowprops=dict(arrowstyle="->"))
+        ax.myarrow = [ax.annotate("",
+                                  xy=(target_neuron[0]+.5, target_neuron[1]+.5),
+                                  xytext=(-20, 50), textcoords='offset pixels',
+                                  arrowprops=dict(arrowstyle="->")) for target_neuron in target_neurons]
 
     if hasattr(ax, 'myhatch'):
         for coll in ax.myhatch.collections:
@@ -246,16 +249,18 @@ for t in range(setup['t_max']):
         I = np.zeros((n_neurons, 1)).reshape(2, size, size)
 
     # external drive
-    I[(0, *target_neuron)] = 25
+    for target_neuron in target_neurons:
+        I[(0, target_neuron[1], target_neuron[0])] = 25
 
-    place_cell_synapses = update_place_cell_synapses(-direc / np.array([place_cell_x, place_cell_y]), place_cell_synapses)
+    if start_neuron is not None:
+        place_cell_synapses = update_place_cell_synapses(-direc / np.array([place_cell_x, place_cell_y]), place_cell_synapses)
 
-    place_cell_activations = update_place_cell_activations(place_cell_synapses,
-                                                           place_cell_activations)
-    place_cell_activations = np.multiply(place_cell_activations, PC_inactive)
+        place_cell_activations = update_place_cell_activations(place_cell_synapses,
+                                                            place_cell_activations)
+        place_cell_activations = np.multiply(place_cell_activations, PC_inactive)
 
-    # normalize place cell activations to prevent
-    place_cell_activations /= np.max(place_cell_activations)
+        # normalize place cell activations to prevent
+        place_cell_activations /= np.max(place_cell_activations)
 
     spiking_fired = v >= 30
     spiking_fired_excite = np.where(v[:ne] >= 30)[0]
