@@ -8,6 +8,15 @@ SETUPS = {
         'randomize_neurons': False,
         'thalamic_input': False,
         },
+    'simple': {
+        'size': 41,
+        'blocked': tuple(),
+        'start_neuron': (4, 4),
+        'target_neuron': (36, 36),
+        't_max': 300,
+        'randomize_neurons': False,
+        'thalamic_input': False,
+        },
     's_maze': {
         'size': 41,
         'blocked': (
