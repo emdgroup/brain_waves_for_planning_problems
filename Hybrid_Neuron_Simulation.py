@@ -8,6 +8,7 @@ import copy
 import numpy as np
 import matplotlib.pyplot as plt
 from utils.animation import FFMPEGVideo, ImageStack
+from ContinuousAttractorLayer import ContinuousAttractorLayer
 from setups import SETUPS
 
 if len(sys.argv) > 1:
@@ -29,39 +30,6 @@ sigma = 0.03  # 0.08
 tau = 0.8
 direc_cooldown_period = 12
 dc_current = 25
-
-
-# real-space position of the place cell activations
-ci = np.asarray(np.meshgrid(
-    (np.arange(place_cell_x) - 0.5) / place_cell_x,
-    (np.arange(place_cell_y) - 0.5) / place_cell_y)).T
-# precompute pairwise difference between all entries in ci for the place_cell_synapses
-ci_diff = ci[:, :, np.newaxis, np.newaxis, :] - ci[np.newaxis, np.newaxis, :, :, :]
-
-
-def update_place_cell_synapses(x: np.ndarray, place_cell_synapses: np.ndarray):
-
-    diff = ci_diff + x
-    norm_sq = np.sum(np.square(diff, out=diff), axis=-1)
-    place_cell_synapses = J * np.exp(-(norm_sq/sigma**2)) - T
-
-    return place_cell_synapses
-
-
-def update_place_cell_activations(place_cell_synapses: np.ndarray, place_cell_activations: np.ndarray):
-
-    B = np.einsum('ij,ijkl->kl', place_cell_activations, place_cell_synapses)
-
-    summed_activations = np.sum(place_cell_activations)
-
-    if summed_activations > 0:
-        place_cell_activations = (1 - tau) * B + (tau * (B/summed_activations))
-    else:
-        place_cell_activations = np.zeros_like(B)
-
-    place_cell_activations[place_cell_activations < 0] = 0
-
-    return place_cell_activations
 
 
 def imprint_circular_kernel(field: np.array, layer_from: int, layer_to: int, radius: int, max_value: float,
@@ -145,11 +113,15 @@ if setup['randomize_synapses'] > 0.:
     rs = np.random.uniform(1.-setup['randomize_synapses'], 1.+setup['randomize_synapses'], S.shape)
     S *= rs
 
-place_cell_blocked = np.ones((place_cell_x, place_cell_y))
+continuous_attractor_layer = ContinuousAttractorLayer(
+    nx=place_cell_x,
+    ny=place_cell_y,
+    )
 
 for region in setup['blocked']:
+    continuous_attractor_layer.block_region(region)
     S[(slice(None), *region)] = 0
-    place_cell_blocked[region] = 0
+
 target_neurons = setup['target_neurons']
 
 v = -65 * np.ones((ne+ni, 1)).reshape((2, size_x, size_y))
@@ -158,14 +130,10 @@ firings = np.empty((0, 2))
 
 n = 1
 
-# Construct continuous attractor layer
-place_cell_synapses = np.zeros((place_cell_x, place_cell_y, place_cell_x, place_cell_y))
-
-place_cell_activations = np.zeros((place_cell_x, place_cell_y))
 start_neuron = setup['start_neuron']
 
 if start_neuron is not None:
-    place_cell_activations[start_neuron] = 1.
+    continuous_attractor_layer.set_activation(start_neuron)
 
 trajectory = np.zeros((size_x, size_y))
 
@@ -245,14 +213,7 @@ for t in range(setup['t_max']):
         thalamic_input[(0, target_neuron[0], target_neuron[1])] = dc_current
 
     if start_neuron is not None:
-        place_cell_synapses = update_place_cell_synapses(direc / np.array([place_cell_x, place_cell_y]), place_cell_synapses)
-
-        place_cell_activations = update_place_cell_activations(place_cell_synapses,
-                                                               place_cell_activations)
-        place_cell_activations *= place_cell_blocked
-
-        # normalize place cell activations to prevent
-        place_cell_activations /= np.max(place_cell_activations)
+        continuous_attractor_layer.update(direc / np.array([place_cell_x, place_cell_y]), J, T, sigma, tau)
 
     spiking_fired = v >= 30
     spiking_fired_excite = np.where(v[:ne] >= 30)[0]
@@ -273,8 +234,8 @@ for t in range(setup['t_max']):
         direc_update_delay -= 1
 
     # compute weighted average direction vector
-    place_cell_peak = np.asarray(np.unravel_index(np.argmax(place_cell_activations), place_cell_activations.shape))
-    overlap = np.multiply(place_cell_activations, fire_grid)
+    place_cell_peak = np.asarray(np.unravel_index(np.argmax(continuous_attractor_layer.A), continuous_attractor_layer.A.shape))
+    overlap = np.multiply(continuous_attractor_layer.A, fire_grid)
     total = np.sum(overlap)
 
     if total > 0 and direc_update_delay == 0:
@@ -302,7 +263,7 @@ for t in range(setup['t_max']):
         imupdate(ax_vid[0, 1], v[0], vmin=-70, vmax=30)
         imupdate(ax_vid[0, 2], 1 * spiking_fired[1], vmin=0, vmax=2)
         imupdate(ax_vid[0, 3], v[1], vmin=-70, vmax=30)
-        imupdate(ax_vid[1, 0], place_cell_activations)
+        imupdate(ax_vid[1, 0], continuous_attractor_layer.A)
         imupdate(ax_vid[1, 1], overlap)
         imupdate(ax_vid[1, 2], trajectory, vmin=-1, vmax=1, cmap='bwr')
 
@@ -314,7 +275,7 @@ for t in range(setup['t_max']):
 
         # ########### Plots for publication ###################
         fig_pub.suptitle(f't = {t}ms', fontsize=24)
-        imupdate(ax_pub, place_cell_activations, cmap='Greys', overlay=fire_grid)
+        imupdate(ax_pub, continuous_attractor_layer.A, cmap='Greys', overlay=fire_grid)
 
         for ax in [ax_pub]:
             ax.set_xticks([])
