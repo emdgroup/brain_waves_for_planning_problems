@@ -6,6 +6,7 @@ SETUPS = {
         'target_neurons': ((50, 50), ),
         't_max': 100,
         'randomize_neurons': False,
+        'randomize_synapses': 0.,
         'thalamic_input': False,
         },
     'simple': {
@@ -15,6 +16,7 @@ SETUPS = {
         'target_neurons': ((36, 36), ),
         't_max': 300,
         'randomize_neurons': False,
+        'randomize_synapses': 0.,
         'thalamic_input': False,
         },
     'annihilation': {
@@ -24,6 +26,7 @@ SETUPS = {
         'target_neurons': ((36, 18), (4, 18), ),
         't_max': 40,
         'randomize_neurons': False,
+        'randomize_synapses': 0.,
         'thalamic_input': False,
         },
     's_maze': {
@@ -36,6 +39,7 @@ SETUPS = {
         'target_neurons': ((36, 36), ),
         't_max': 750,
         'randomize_neurons': False,
+        'randomize_synapses': 0.,
         'thalamic_input': False,
         },
     'central_block': {
@@ -46,10 +50,11 @@ SETUPS = {
         'start_neuron': (4, 4),
         'target_neurons': ((36, 36), ),
         't_max': 750,
-        'randomize_neurons': True,
+        'randomize_neurons': False,
+        'randomize_synapses': 0.,
         'thalamic_input': False,
         },
-    'central_block_homogeneous': {
+    'central_block_randomized': {
         'size': 41,
         'blocked': (
             (slice(8, 30), slice(8, 30)),
@@ -57,7 +62,8 @@ SETUPS = {
         'start_neuron': (4, 4),
         'target_neurons': ((36, 36), ),
         't_max': 750,
-        'randomize_neurons': False,
+        'randomize_neurons': True,
+        'randomize_synapses': 0.5,
         'thalamic_input': False,
         },
     'complex_maze': {
@@ -133,6 +139,7 @@ SETUPS = {
         'target_neuron': ((56, 56), ),
         't_max': 750,
         'randomize_neurons': False,
+        'randomize_synapses': 0.,
         'thalamic_input': False,
         },
 }

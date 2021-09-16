@@ -13,7 +13,7 @@ from setups import SETUPS
 if len(sys.argv) > 1:
     selected_setup = sys.argv[1]
 else:
-    selected_setup = 's_maze'
+    selected_setup = 'central_block_randomized'
 
 try:
     setup = SETUPS[selected_setup]
@@ -152,6 +152,13 @@ S = imprint_circular_kernel(S, layer_from=0, layer_to=1, radius=suppression_rang
 S = imprint_circular_kernel(S, layer_from=1, layer_to=0, radius=suppression_range, max_value=-9, center_value=-9)
 # some rescaling as connections between nodes are sparse
 S *= 50
+
+if setup['randomize_synapses'] > 0.:
+    # make results reproducible
+    np.random.seed(42)
+    # vary synaptics strength randomly by +/- setup['randomize_synapses'] (relative)
+    rs = np.random.uniform(1.-setup['randomize_synapses'], 1.+setup['randomize_synapses'], S.shape)
+    S *= rs
 
 PC_inactive = np.ones((size, size))
 
