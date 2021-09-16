@@ -1,6 +1,16 @@
 SETUPS = {
+    'test': {
+        'size': (41, 51),
+        'blocked': tuple(),
+        'start_neuron': (4, 4),
+        'target_neurons': ((36, 46), ),
+        't_max': 300,
+        'randomize_neurons': False,
+        'randomize_synapses': 0.,
+        'thalamic_input': False,
+        },
     'empty': {
-        'size': 101,
+        'size': (101, 101),
         'blocked': tuple(),
         'start_neuron': None,
         'target_neurons': ((50, 50), ),
@@ -10,7 +20,7 @@ SETUPS = {
         'thalamic_input': False,
         },
     'simple': {
-        'size': 41,
+        'size': (41, 41),
         'blocked': tuple(),
         'start_neuron': (4, 4),
         'target_neurons': ((36, 36), ),
@@ -20,7 +30,7 @@ SETUPS = {
         'thalamic_input': False,
         },
     'annihilation': {
-        'size': 41,
+        'size': (41, 41),
         'blocked': tuple(),
         'start_neuron': None,
         'target_neurons': ((36, 18), (4, 18), ),
@@ -30,7 +40,7 @@ SETUPS = {
         'thalamic_input': False,
         },
     's_maze': {
-        'size': 41,
+        'size': (41, 41),
         'blocked': (
             (slice(25, 32), slice(10, None)),
             (slice(10, 15), slice(None, 32)),
@@ -43,7 +53,7 @@ SETUPS = {
         'thalamic_input': False,
         },
     'central_block': {
-        'size': 41,
+        'size': (41, 41),
         'blocked': (
             (slice(8, 30), slice(8, 30)),
             ),
@@ -55,7 +65,7 @@ SETUPS = {
         'thalamic_input': False,
         },
     'central_block_randomized': {
-        'size': 41,
+        'size': (41, 41),
         'blocked': (
             (slice(8, 30), slice(8, 30)),
             ),
@@ -67,7 +77,7 @@ SETUPS = {
         'thalamic_input': False,
         },
     'complex_maze': {
-        'size': 60,
+        'size': (60, 60),
         'blocked': (
             (slice(0, 2), slice(56, None)),
             (slice(6, 8), slice(None, 8)),
