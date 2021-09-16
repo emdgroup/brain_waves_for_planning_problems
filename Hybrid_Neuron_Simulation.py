@@ -13,15 +13,14 @@ from setups import SETUPS
 if len(sys.argv) > 1:
     selected_setup = sys.argv[1]
 else:
-    selected_setup = 'central_block_randomized'
+    selected_setup = 'simple'
 
 try:
     setup = SETUPS[selected_setup]
 except KeyError as e:
     raise ValueError('Selected setup "{}" does not exist. Chose one of \n\t{}'.format(selected_setup, '\n\t'.join(SETUPS.keys()))) from e
 
-place_cell_x = setup['size']
-place_cell_y = setup['size']
+place_cell_x, place_cell_y = setup['size']
 
 J = 12  # 2.5
 T = 0.05  # 0.05
@@ -32,41 +31,36 @@ direc_cooldown_period = 12
 dc_current = 25
 
 
-def update_place_cell_synapses(x: np.ndarray = None,
-                               place_cell_synapses: np.ndarray = None):
+def update_place_cell_synapses(x: np.ndarray, place_cell_synapses: np.ndarray):
 
-    for i in range(place_cell_synapses.shape[0]):
+    place_cell_x = place_cell_synapses.shape[0]
+    place_cell_y = place_cell_synapses.shape[1]
 
-        iidx = np.unravel_index(i, (place_cell_x, place_cell_y))
-        ix = iidx[0]
-        iy = iidx[1]
-        ci_x = (ix - 0.5) / place_cell_x
-        ci_y = (iy - 0.5) / place_cell_y
-        ci = np.array([ci_x, ci_y])
+    jy, jx = np.meshgrid(range(place_cell_x), range(place_cell_y))
+    cj_x = (jx - 0.5) / place_cell_x
+    cj_y = (jy - 0.5) / place_cell_y
+    cj = np.array([cj_x, cj_y]).T
 
-        jidx = np.unravel_index(np.arange(place_cell_x*place_cell_y),
-                                (place_cell_x, place_cell_y))
-        jx = jidx[0]
-        jy = jidx[1]
-        cj_x = (jx - 0.5) / place_cell_x
-        cj_y = (jy - 0.5) / place_cell_x
-        cj = np.array([cj_x, cj_y]).T
+    for ix in range(place_cell_x):
+        for iy in range(place_cell_y):
 
-        diff = ci - cj
-        diff += x
+            ci_x = (ix - 0.5) / place_cell_x
+            ci_y = (iy - 0.5) / place_cell_y
+            ci = np.array([ci_x, ci_y])
 
-        norm = np.linalg.norm(diff, axis=1)
+            diff = ci - cj
+            diff += x
 
-        place_cell_synapses[i] = J * np.exp(-(norm**2/sigma**2)) - T
+            norm = np.linalg.norm(diff, axis=-1)
 
-    return place_cell_synapses.T
+            place_cell_synapses[ix, iy] = J * np.exp(-(norm**2/sigma**2)) - T
+
+    return place_cell_synapses
 
 
-def update_place_cell_activations(place_cell_synapses: np.ndarray = None,
-                                  place_cell_activations: np.ndarray = None):
+def update_place_cell_activations(place_cell_synapses: np.ndarray, place_cell_activations: np.ndarray):
 
-    place_cell_activations = place_cell_activations.flatten()
-    B = np.dot(place_cell_activations, place_cell_synapses)
+    B = np.einsum('ij,ijkl->kl', place_cell_activations, place_cell_synapses)
 
     summed_activations = np.sum(place_cell_activations)
 
@@ -77,7 +71,7 @@ def update_place_cell_activations(place_cell_synapses: np.ndarray = None,
 
     place_cell_activations[place_cell_activations < 0] = 0
 
-    return place_cell_activations.reshape(place_cell_x, place_cell_y)
+    return place_cell_activations
 
 
 def imprint_circular_kernel(field: np.array, layer_from: int, layer_to: int, radius: int, max_value: float,
@@ -106,8 +100,8 @@ def imprint_circular_kernel(field: np.array, layer_from: int, layer_to: int, rad
 
 
 # Construct spiking neuron layer
-size = setup['size']
-ne = size * size
+size_x, size_y = setup['size']
+ne = size_x * size_y
 ni = ne
 n_neurons = ne + ni
 
@@ -134,13 +128,13 @@ c = np.append(np.array([-65 + 15 * re**2]),                       # after-spike 
 d = np.append(np.array([8 - 6 * re**2]),                          # after-spike reset of the recovery variable
               np.array([2*np.ones((ni, 1))]))[:, np.newaxis]      # u caused by slow high-threshold Na+ and K+ conductances.
 
-a = a.reshape((2, size, size))
-b = b.reshape((2, size, size))
-c = c.reshape((2, size, size))
-d = d.reshape((2, size, size))
+a = a.reshape((2, size_x, size_y))
+b = b.reshape((2, size_x, size_y))
+c = c.reshape((2, size_x, size_y))
+d = d.reshape((2, size_x, size_y))
 
 # construct S
-S = np.zeros((2, size, size) * 2)
+S = np.zeros((2, size_x, size_y) * 2)
 
 suppression_range = 1
 excitation_range = 2
@@ -161,21 +155,21 @@ if setup['randomize_synapses'] > 0.:
     rs = np.random.uniform(1.-setup['randomize_synapses'], 1.+setup['randomize_synapses'], S.shape)
     S *= rs
 
-PC_inactive = np.ones((size, size))
+place_cell_blocked = np.ones((place_cell_x, place_cell_y))
 
 for region in setup['blocked']:
     S[(slice(None), *region)] = 0
-    PC_inactive[region] = 0
+    place_cell_blocked[region] = 0
 target_neurons = setup['target_neurons']
 
-v = -65 * np.ones((ne+ni, 1)).reshape((2, size, size))
+v = -65 * np.ones((ne+ni, 1)).reshape((2, size_x, size_y))
 u = b*v
 firings = np.empty((0, 2))
 
 n = 1
 
 # Construct continuous attractor layer
-place_cell_synapses = np.zeros((place_cell_x * place_cell_y, place_cell_x * place_cell_y))
+place_cell_synapses = np.zeros((place_cell_x, place_cell_y, place_cell_x, place_cell_y))
 
 place_cell_activations = np.zeros((place_cell_x, place_cell_y))
 start_neuron = setup['start_neuron']
@@ -183,7 +177,7 @@ start_neuron = setup['start_neuron']
 if start_neuron is not None:
     place_cell_activations[start_neuron] = 1.
 
-trajectory = np.zeros((size, size))
+trajectory = np.zeros((size_x, size_y))
 
 plt.ion()
 fig_vid, ax_vid = plt.subplots(nrows=2, ncols=4, squeeze=True, figsize=(10, 6))
@@ -252,20 +246,20 @@ coords = np.asarray(np.meshgrid(range(place_cell_x), range(place_cell_y))).T
 
 for t in range(setup['t_max']):
     if setup['thalamic_input']:
-        I = np.random.randn(n_neurons, 1).reshape(2, size, size)
+        thalamic_input = np.random.uniform(0, 1, (2, size_x, size_y))
     else:
-        I = np.zeros((n_neurons, 1)).reshape(2, size, size)
+        thalamic_input = np.zeros((2, size_x, size_y))
 
     # external drive
     for target_neuron in target_neurons:
-        I[(0, target_neuron[1], target_neuron[0])] = dc_current
+        thalamic_input[(0, target_neuron[0], target_neuron[1])] = dc_current
 
     if start_neuron is not None:
-        place_cell_synapses = update_place_cell_synapses(-direc / np.array([place_cell_x, place_cell_y]), place_cell_synapses)
+        place_cell_synapses = update_place_cell_synapses(direc / np.array([place_cell_x, place_cell_y]), place_cell_synapses)
 
         place_cell_activations = update_place_cell_activations(place_cell_synapses,
-                                                            place_cell_activations)
-        place_cell_activations = np.multiply(place_cell_activations, PC_inactive)
+                                                               place_cell_activations)
+        place_cell_activations *= place_cell_blocked
 
         # normalize place cell activations to prevent
         place_cell_activations /= np.max(place_cell_activations)
@@ -276,14 +270,14 @@ for t in range(setup['t_max']):
     fire_grid = 1. * spiking_fired[0]
 
     # reset SNN neurons that spiked and compute their output current towards the other neurons
-    zs = np.zeros((2, size, size))
+    zs = np.zeros((2, size_x, size_y))
     for _i in np.argwhere(spiking_fired):
         i = tuple(_i)
         v[i] = c[i]
         u[i] += d[i]
         zs += S[(slice(None), )*3 + i]
 
-    total_current = np.maximum(I + zs, 0)
+    total_current = np.maximum(thalamic_input + zs, 0)
 
     if direc_update_delay > 0:
         direc_update_delay -= 1
