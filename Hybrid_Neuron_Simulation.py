@@ -197,7 +197,7 @@ def imupdate(ax, data, overlay=None, *args, **kwargs):
 
 max_plot = list()
 
-direc = np.array([0, 0])
+Δ = np.array([0, 0])
 direc_update_delay = 0
 
 coords = np.asarray(np.meshgrid(range(place_cell_x), range(place_cell_y))).T
@@ -213,7 +213,7 @@ for t in range(setup['t_max']):
         thalamic_input[(0, target_neuron[0], target_neuron[1])] = dc_current
 
     if start_neuron is not None:
-        continuous_attractor_layer.update(direc / np.array([place_cell_x, place_cell_y]), J, T, sigma, tau)
+        continuous_attractor_layer.update(Δ, J, T, sigma, tau)
 
     spiking_fired = v >= 30
     spiking_fired_excite = np.where(v[:ne] >= 30)[0]
@@ -234,20 +234,20 @@ for t in range(setup['t_max']):
         direc_update_delay -= 1
 
     # compute weighted average direction vector
-    place_cell_peak = np.asarray(np.unravel_index(np.argmax(continuous_attractor_layer.A), continuous_attractor_layer.A.shape))
+    place_cell_peak = continuous_attractor_layer.peak
     overlap = np.multiply(continuous_attractor_layer.A, fire_grid)
     total = np.sum(overlap)
 
     if total > 0 and direc_update_delay == 0:
         delta = coords - place_cell_peak[np.newaxis, np.newaxis, :]
-        direc = np.sum(delta * overlap[..., np.newaxis], axis=(0, 1)) / total
+        Δ = np.sum(delta * overlap[..., np.newaxis], axis=(0, 1)) / total
         direc_update_delay = direc_cooldown_period
     else:
-        direc = np.array([0, 0])
+        Δ = np.array([0, 0])
 
     # record trajectory for plotting
     trajectory *= 0.99
-    trajectory[tuple(np.round(place_cell_peak + direc).astype(int))] = 1.  # if direc == 0 this will be overwritten by the next line
+    trajectory[tuple(np.round(place_cell_peak + Δ).astype(int))] = 1.  # if direc == 0 this will be overwritten by the next line
     trajectory[tuple(place_cell_peak)] = -1.
 
     subcycle = 2
