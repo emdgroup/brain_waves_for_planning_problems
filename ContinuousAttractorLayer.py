@@ -41,7 +41,7 @@ class ContinuousAttractorLayer:
             self._place_cell_activations[self._place_cell_activations < 0] = 0
 
     def update(self, Δ: np.ndarray, J: float, T: float, σ: float, τ: float):
-        self._update_place_cell_synapses(Δ, J, T, σ)
+        self._update_place_cell_synapses(Δ / np.array([self._nx, self._ny]), J, T, σ)
         self._update_place_cell_activations(τ)
         self._place_cell_activations *= self._place_cell_blocked
         self._place_cell_activations /= self._place_cell_activations.max()
@@ -49,3 +49,7 @@ class ContinuousAttractorLayer:
     @property
     def A(self) -> np.ndarray:
         return self._place_cell_activations
+
+    @property
+    def peak(self) -> np.ndarray:
+        return np.asarray(np.unravel_index(np.argmax(self.A), self.A.shape))
