@@ -13,7 +13,7 @@ from setups import SETUPS
 if len(sys.argv) > 1:
     selected_setup = sys.argv[1]
 else:
-    selected_setup = 'simple'
+    selected_setup = 'test'
 
 try:
     setup = SETUPS[selected_setup]
@@ -31,29 +31,19 @@ direc_cooldown_period = 12
 dc_current = 25
 
 
+# real-space position of the place cell activations
+ci = np.asarray(np.meshgrid(
+    (np.arange(place_cell_x) - 0.5) / place_cell_x,
+    (np.arange(place_cell_y) - 0.5) / place_cell_y)).T
+# precompute pairwise difference between all entries in ci for the place_cell_synapses
+ci_diff = ci[:, :, np.newaxis, np.newaxis, :] - ci[np.newaxis, np.newaxis, :, :, :]
+
+
 def update_place_cell_synapses(x: np.ndarray, place_cell_synapses: np.ndarray):
 
-    place_cell_x = place_cell_synapses.shape[0]
-    place_cell_y = place_cell_synapses.shape[1]
-
-    jy, jx = np.meshgrid(range(place_cell_x), range(place_cell_y))
-    cj_x = (jx - 0.5) / place_cell_x
-    cj_y = (jy - 0.5) / place_cell_y
-    cj = np.array([cj_x, cj_y]).T
-
-    for ix in range(place_cell_x):
-        for iy in range(place_cell_y):
-
-            ci_x = (ix - 0.5) / place_cell_x
-            ci_y = (iy - 0.5) / place_cell_y
-            ci = np.array([ci_x, ci_y])
-
-            diff = ci - cj
-            diff += x
-
-            norm = np.linalg.norm(diff, axis=-1)
-
-            place_cell_synapses[ix, iy] = J * np.exp(-(norm**2/sigma**2)) - T
+    diff = ci_diff + x
+    norm_sq = np.sum(np.square(diff, out=diff), axis=-1)
+    place_cell_synapses = J * np.exp(-(norm_sq/sigma**2)) - T
 
     return place_cell_synapses
 
