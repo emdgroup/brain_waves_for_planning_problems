@@ -29,6 +29,7 @@ sigma = 0.03  # 0.08
 
 tau = 0.8
 direc_cooldown_period = 12
+dc_current = 25
 
 
 def update_place_cell_synapses(x: np.ndarray = None,
@@ -257,7 +258,7 @@ for t in range(setup['t_max']):
 
     # external drive
     for target_neuron in target_neurons:
-        I[(0, target_neuron[1], target_neuron[0])] = 25
+        I[(0, target_neuron[1], target_neuron[0])] = dc_current
 
     if start_neuron is not None:
         place_cell_synapses = update_place_cell_synapses(-direc / np.array([place_cell_x, place_cell_y]), place_cell_synapses)
