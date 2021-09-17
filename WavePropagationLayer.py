@@ -78,7 +78,7 @@ class WavePropagationLayer:
         return field
 
     def block_region(self, region: Tuple[slice]) -> None:
-        self._S[(slice(None), *region)] = 0
+        self._S[(slice(None), ) * 4 + region] = 0
 
     def update(self, dt: float, thalamic_input: np.ndarray, subcycle: int = 2) -> np.ndarray:
         spiking_fired = self._v >= 30
