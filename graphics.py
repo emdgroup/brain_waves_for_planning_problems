@@ -121,4 +121,4 @@ class Graphics:
         return plt.fignum_exists(self.fig_vid.number)
 
     def save_video(self, fps: int=8, keep_frame_images=False):
-        self.animation.save(fps, keep_frame_images)
+        self.animation.save(fps=fps, keep_frame_images=keep_frame_images)
