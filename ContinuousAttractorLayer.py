@@ -4,8 +4,12 @@ from typing import Tuple
 
 class ContinuousAttractorLayer:
 
-    def __init__(self, shape: Tuple[int]):
+    def __init__(self, shape: Tuple[int], J: float, T: float, σ: float, τ: float):
         self.shape = shape
+        self._J = J
+        self._T = T
+        self._σ = σ
+        self._τ = τ
 
         # real-space position of the place cell activations
         ci = np.asarray(np.meshgrid(
@@ -19,29 +23,42 @@ class ContinuousAttractorLayer:
         self._place_cell_activations = np.zeros(self.shape)
         self._place_cell_blocked = np.ones(self.shape)
 
+        # cache place cell synapses for Δ == (0, 0)
+        self._place_cell_synapses_0 = None
+        self._update_place_cell_synapses(np.array([0, 0]))
+        self._place_cell_synapses_0 = self._place_cell_synapses
+
     def block_region(self, region: Tuple[slice]) -> None:
         self._place_cell_blocked[region] = 0
 
     def set_activation(self, point: Tuple[int]) -> None:
         self._place_cell_activations[point] = 1.
 
-    def _update_place_cell_synapses(self, Δ: np.ndarray, J: float, T: float, σ: float) -> None:
-        diff = self._ci_diff + Δ
-        norm_sq = np.sum(np.square(diff, out=diff), axis=-1)
-        self._place_cell_synapses = J * np.exp(-(norm_sq/σ**2)) - T
+    def _update_place_cell_synapses(self, Δ: np.ndarray) -> None:
+        if Δ[0] == 0 and Δ[1] == 0 and self._place_cell_synapses_0 is not None:
+            self._place_cell_synapses = self._place_cell_synapses_0
+        else:
+            diff = self._ci_diff + Δ
+            np.square(diff, out=diff)
+            # self._place_cell_synapses = J * np.exp(-(norm_sq/σ**2)) - T
+            self._place_cell_synapses = np.sum(diff, axis=-1)
+            self._place_cell_synapses /= -self._σ**2
+            np.exp(self._place_cell_synapses, out=self._place_cell_synapses)
+            self._place_cell_synapses *= self._J
+            self._place_cell_synapses -= self._T
 
-    def _update_place_cell_activations(self, τ: float) -> None:
+    def _update_place_cell_activations(self) -> None:
 
         Σ = np.sum(self._place_cell_activations)
 
         if Σ > 0:
             B = np.einsum('ij,ijkl->kl', self._place_cell_activations, self._place_cell_synapses)
-            self._place_cell_activations = (1 - τ) * B + τ/Σ * B
+            self._place_cell_activations = (1 - self._τ) * B + self._τ/Σ * B
             self._place_cell_activations[self._place_cell_activations < 0] = 0
 
-    def update(self, Δ: np.ndarray, J: float, T: float, σ: float, τ: float):
-        self._update_place_cell_synapses(Δ, J, T, σ)
-        self._update_place_cell_activations(τ)
+    def update(self, Δ: np.ndarray):
+        self._update_place_cell_synapses(Δ)
+        self._update_place_cell_activations()
         self._place_cell_activations *= self._place_cell_blocked
         self._place_cell_activations /= self._place_cell_activations.max()
 

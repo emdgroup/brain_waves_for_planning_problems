@@ -33,15 +33,8 @@ dt = 1  # simulation timestep
 
 shape = setup['size']
 
-wave_propagation_layer = WavePropagationLayer(
-    shape=shape,
-    randomize_neurons=setup['randomize_neurons'],
-    randomize_synapses=setup['randomize_synapses'],
-)
-
-continuous_attractor_layer = ContinuousAttractorLayer(
-    shape=shape,
-    )
+wave_propagation_layer = WavePropagationLayer(shape, setup['randomize_neurons'], setup['randomize_synapses'])
+continuous_attractor_layer = ContinuousAttractorLayer(shape, J, T, σ, τ)
 
 for region in setup['blocked']:
     continuous_attractor_layer.block_region(region)
@@ -130,7 +123,7 @@ for t in range(setup['t_max']):
         thalamic_input[(0, *target_neuron)] = I
 
     if start_neuron is not None:
-        continuous_attractor_layer.update(Δ / np.asarray(shape), J, T, σ, τ)
+        continuous_attractor_layer.update(Δ / np.asarray(shape))
 
     spiking_fired = wave_propagation_layer.update(dt, thalamic_input)
 
@@ -154,7 +147,7 @@ for t in range(setup['t_max']):
     trajectory[tuple(np.round(place_cell_peak + Δ).astype(int))] = 1.  # if direc == 0 this will be overwritten by the next line
     trajectory[tuple(place_cell_peak)] = -1.
 
-    if t % 1 == 0:
+    if t % 1 == 1:
         fire_grid = 1. * spiking_fired[0]
 
         # ########### Plots for animation ###################
@@ -203,4 +196,4 @@ for t in range(setup['t_max']):
         print('Figure closed. Finalizing simulation.')
         break
 
-animation.save(selected_setup, fps=8, keep_frame_images=False)
+# animation.save(selected_setup, fps=8, keep_frame_images=False)
