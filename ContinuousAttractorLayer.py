@@ -32,7 +32,8 @@ class ContinuousAttractorLayer:
         self._place_cell_blocked[region] = 0
 
     def set_activation(self, point: Tuple[int]) -> None:
-        self._place_cell_activations[point] = 1.
+        if point is not None:
+            self._place_cell_activations[point] = 1.
 
     def _update_place_cell_synapses(self, Δ: np.ndarray) -> None:
         if Δ[0] == 0 and Δ[1] == 0 and self._place_cell_synapses_0 is not None:
