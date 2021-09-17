@@ -69,11 +69,11 @@ class WavePropagationLayer:
                         delta = np.sqrt((row-d_row)**2 + (col-d_col)**2)
 
                         if power == 0 and delta > radius:
-                            field[layer_to, d_row, d_col, layer_from, row, col] = 0
+                            field[layer_from, row, col, layer_to, d_row, d_col] = 0
                         elif delta > center_radius:
-                            field[layer_to, d_row, d_col, layer_from, row, col] = max_value / delta**power
+                            field[layer_from, row, col, layer_to, d_row, d_col] = max_value / delta**power
                         else:
-                            field[layer_to, d_row, d_col, layer_from, row, col] = center_value
+                            field[layer_from, row, col, layer_to, d_row, d_col] = center_value
 
         return field
 
@@ -89,7 +89,7 @@ class WavePropagationLayer:
             i = tuple(_i)
             self._v[i] = self._c[i]
             self._u[i] += self._d[i]
-            zs += self._S[(slice(None), )*3 + i]
+            zs += self._S[i]
 
         total_current = np.maximum(thalamic_input + zs, 0)
 
