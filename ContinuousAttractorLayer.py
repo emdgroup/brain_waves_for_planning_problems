@@ -4,21 +4,20 @@ from typing import Tuple
 
 class ContinuousAttractorLayer:
 
-    def __init__(self, nx: int, ny: int, ):
-        self._nx = nx
-        self._ny = ny
+    def __init__(self, shape: Tuple[int]):
+        self.shape = shape
 
         # real-space position of the place cell activations
         ci = np.asarray(np.meshgrid(
-            (np.arange(self._nx) - 0.5) / self._nx,
-            (np.arange(self._ny) - 0.5) / self._ny)).T
+            (np.arange(self.shape[0]) - 0.5) / self.shape[0],
+            (np.arange(self.shape[1]) - 0.5) / self.shape[1])).T
 
         # precompute pairwise difference between all entries in ci for the place_cell_synapses
         self._ci_diff = ci[:, :, np.newaxis, np.newaxis, :] - ci[np.newaxis, np.newaxis, :, :, :]
 
-        self._place_cell_synapses = np.zeros((self._nx, self._ny, self._nx, self._ny))
-        self._place_cell_activations = np.zeros((self._nx, self._ny))
-        self._place_cell_blocked = np.ones((self._nx, self._ny))
+        self._place_cell_synapses = np.zeros(self.shape * 2)
+        self._place_cell_activations = np.zeros(self.shape)
+        self._place_cell_blocked = np.ones(self.shape)
 
     def block_region(self, region: Tuple[slice]) -> None:
         self._place_cell_blocked[region] = 0
@@ -41,7 +40,7 @@ class ContinuousAttractorLayer:
             self._place_cell_activations[self._place_cell_activations < 0] = 0
 
     def update(self, Δ: np.ndarray, J: float, T: float, σ: float, τ: float):
-        self._update_place_cell_synapses(Δ / np.array([self._nx, self._ny]), J, T, σ)
+        self._update_place_cell_synapses(Δ, J, T, σ)
         self._update_place_cell_activations(τ)
         self._place_cell_activations *= self._place_cell_blocked
         self._place_cell_activations /= self._place_cell_activations.max()
