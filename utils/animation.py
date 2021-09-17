@@ -61,9 +61,10 @@ class AnimatedGIF(AnimatedImage):
 
 
 class FFMPEGVideo(object):
-    def __init__(self):
+    def __init__(self, name: str = None):
         super(FFMPEGVideo, self).__init__()
         self._ffmpeg = shutil.which('ffmpeg')
+        self._name = name
         self._workdir = mkdtemp(prefix='FFMPEGVideo.', dir=os.getcwd())
         self._framecounter = 0
 
@@ -82,9 +83,13 @@ class FFMPEGVideo(object):
 
         self._framecounter += 1
 
-    def save(self, filename, fps, keep_frame_images=False):
+    def save(self, filename: str = None, fps: int=8, keep_frame_images=False):
         if self._framecounter == 0:
             raise Exception('No frames stored.')
+
+        if filename is None:
+            assert self._name is not None
+            filename = self._name
 
         if not filename.lower().endswith('.mp4'):
             filename += '.mp4'

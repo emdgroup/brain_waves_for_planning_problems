@@ -4,10 +4,9 @@ Attractor Network for 2DoF Robot Arm
 Author: Henry Powell and Mathias Winkel
 """
 import sys
-import copy
 import numpy as np
-import matplotlib.pyplot as plt
-from utils.animation import FFMPEGVideo, ImageStack
+
+from graphics import Graphics
 from ContinuousAttractorLayer import ContinuousAttractorLayer
 from WavePropagationLayer import WavePropagationLayer
 from setups import SETUPS
@@ -35,76 +34,13 @@ shape = setup['size']
 
 wave_propagation_layer = WavePropagationLayer(shape, setup['randomize_neurons'], setup['randomize_synapses'])
 continuous_attractor_layer = ContinuousAttractorLayer(shape, J, T, σ, τ)
+graphics = Graphics(shape, selected_setup, setup['blocked'], setup['target_neurons'])
 
 for region in setup['blocked']:
     continuous_attractor_layer.block_region(region)
     wave_propagation_layer.block_region(region)
 
-target_neurons = setup['target_neurons']
-start_neuron = setup['start_neuron']
-
-if start_neuron is not None:
-    continuous_attractor_layer.set_activation(start_neuron)
-
-trajectory = np.zeros(shape)
-
-plt.ion()
-fig_vid, ax_vid = plt.subplots(nrows=2, ncols=4, squeeze=True, figsize=(10, 6))
-ax_vid[0, 0].set_title('Exci. Firing Pattern', fontsize=8)
-ax_vid[0, 1].set_title('Exci. SNN Membrane Potential', fontsize=8)
-ax_vid[0, 2].set_title('Inhi. Firing Pattern', fontsize=8)
-ax_vid[0, 3].set_title('Inhi. SNN Membrane Potential', fontsize=8)
-ax_vid[1, 0].set_title('Place Cell Activations', fontsize=8)
-ax_vid[1, 1].set_title('Overlap', fontsize=8)
-ax_vid[1, 2].set_title('Trajectory', fontsize=8)
-ax_vid[1, 3].remove()
-
-fig_pub, ax_pub = plt.subplots(nrows=1, ncols=1, squeeze=True, figsize=(3, 3.25))
-
-fig_pub2, ax_pub2 = plt.subplots(nrows=1, ncols=2, squeeze=True, figsize=(6, 3))
-ax_pub2[0].set_title('Excitatory Firing Pattern', fontsize=14)
-ax_pub2[1].set_title('Inhibitory Firing Pattern', fontsize=14)
-
-animation = FFMPEGVideo()
-pub_images = ImageStack(selected_setup)
-pub_images2 = ImageStack(selected_setup + '.exci_inhi')
-
-my_cmap = copy.copy(plt.cm.get_cmap('gray'))  # get a copy of the gray color map
-my_cmap.set_bad(alpha=0)  # set how the colormap handles 'bad' values
-
-
-def imupdate(ax, data, overlay=None, *args, **kwargs):
-
-    # mask geometry to make the setup visible in the plot
-    mask = np.zeros_like(data)
-    data_plot = data.copy().astype(float)
-    for region in setup['blocked']:
-        mask[region] = 1
-        data_plot[region] = np.nan
-
-    if overlay is not None:
-        overlay_tmp = overlay.copy()
-        overlay_tmp[overlay_tmp == 0] = np.nan
-
-    if hasattr(ax, 'myplot'):
-        ax.myplot.set_data(data_plot)
-
-        if overlay is not None:
-            ax.myoverlay.set_data(overlay_tmp)
-    else:
-        ax.myplot = ax.imshow(data_plot, *args, **kwargs)
-        if overlay is not None:
-            ax.myoverlay = ax.imshow(overlay_tmp, vmin=0, vmax=2, cmap=my_cmap)
-        ax.myarrow = [ax.annotate("",
-                                  xy=(target_neuron[0]+.5, target_neuron[1]+.5),
-                                  xytext=(-20, 50), textcoords='offset pixels',
-                                  arrowprops=dict(arrowstyle="->")) for target_neuron in target_neurons]
-
-    if hasattr(ax, 'myhatch'):
-        for coll in ax.myhatch.collections:
-            ax.collections.remove(coll)
-    ax.myhatch = ax.contourf(mask, 1, hatches=['', '////'], alpha=0)
-
+continuous_attractor_layer.set_activation(setup['start_neuron'])
 
 Δ = np.array([0, 0])
 thalamic_input = np.zeros((2, *shape))
@@ -119,10 +55,10 @@ for t in range(setup['t_max']):
         thalamic_input = np.random.uniform(0, 1, (2, *shape))
 
     # external drive
-    for target_neuron in target_neurons:
+    for target_neuron in setup['target_neurons']:
         thalamic_input[(0, *target_neuron)] = I
 
-    if start_neuron is not None:
+    if setup['start_neuron'] is not None:
         continuous_attractor_layer.update(Δ / np.asarray(shape))
 
     spiking_fired = wave_propagation_layer.update(dt, thalamic_input)
@@ -142,58 +78,8 @@ for t in range(setup['t_max']):
     else:
         direc_update_delay -= dt
 
-    # record trajectory for plotting
-    trajectory *= 0.99
-    trajectory[tuple(np.round(place_cell_peak + Δ).astype(int))] = 1.  # if direc == 0 this will be overwritten by the next line
-    trajectory[tuple(place_cell_peak)] = -1.
-
-    if t % 1 == 0:
-        fire_grid = 1. * spiking_fired[0]
-
-        # ########### Plots for animation ###################
-        fig_vid.suptitle(f't = {t}ms')
-        imupdate(ax_vid[0, 0], fire_grid, vmin=0, vmax=2)
-        imupdate(ax_vid[0, 1], wave_propagation_layer.v[0], vmin=-70, vmax=30)
-        imupdate(ax_vid[0, 2], 1 * spiking_fired[1], vmin=0, vmax=2)
-        imupdate(ax_vid[0, 3], wave_propagation_layer.v[1], vmin=-70, vmax=30)
-        imupdate(ax_vid[1, 0], continuous_attractor_layer.A)
-        imupdate(ax_vid[1, 1], overlap)
-        imupdate(ax_vid[1, 2], trajectory, vmin=-1, vmax=1, cmap='bwr')
-
-        for ax in ax_vid.flatten():
-            ax.set_xticks([])
-            ax.set_yticks([])
-
-        fig_vid.tight_layout()
-
-        # ########### Plots for publication ###################
-        fig_pub.suptitle(f't = {t}ms', fontsize=24)
-        imupdate(ax_pub, continuous_attractor_layer.A, cmap='Greys', overlay=fire_grid)
-
-        for ax in [ax_pub]:
-            ax.set_xticks([])
-            ax.set_yticks([])
-
-        fig_pub.tight_layout()
-
-        imupdate(ax_pub2[0], fire_grid, vmin=0, vmax=2, cmap='Greys')
-        imupdate(ax_pub2[1], 1 * spiking_fired[1], vmin=0, vmax=2, cmap='Greys')
-
-        for ax in ax_pub2.flatten():
-            ax.set_xticks([])
-            ax.set_yticks([])
-
-        fig_pub2.tight_layout()
-
-        plt.show()
-
-        plt.pause(0.1)
-        animation.add_frame(fig_vid)
-        pub_images.add_frame(fig_pub)
-        pub_images2.add_frame(fig_pub2)
-
-    if not plt.fignum_exists(fig_vid.number):
+    if not graphics.update(t, place_cell_peak, Δ, spiking_fired, wave_propagation_layer.v, continuous_attractor_layer.A, overlap):
         print('Figure closed. Finalizing simulation.')
         break
 
-animation.save(selected_setup, fps=8, keep_frame_images=False)
+graphics.save_video(fps=8, keep_frame_images=False)
