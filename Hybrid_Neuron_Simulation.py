@@ -58,8 +58,7 @@ for t in range(setup['t_max']):
     for target_neuron in setup['target_neurons']:
         thalamic_input[(0, *target_neuron)] = I
 
-    if setup['start_neuron'] is not None:
-        continuous_attractor_layer.update(Δ / np.asarray(shape))
+    continuous_attractor_layer.update(Δ / np.asarray(shape))
 
     spiking_fired = wave_propagation_layer.update(dt, thalamic_input)
 
