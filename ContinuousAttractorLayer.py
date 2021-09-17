@@ -56,12 +56,12 @@ class ContinuousAttractorLayer:
             B = np.einsum('ij,ijkl->kl', self._place_cell_activations, self._place_cell_synapses)
             self._place_cell_activations = (1 - self._τ) * B + self._τ/Σ * B
             self._place_cell_activations[self._place_cell_activations < 0] = 0
+            self._place_cell_activations *= self._place_cell_blocked
+            self._place_cell_activations /= self._place_cell_activations.max()
 
     def update(self, Δ: np.ndarray):
         self._update_place_cell_synapses(Δ)
         self._update_place_cell_activations()
-        self._place_cell_activations *= self._place_cell_blocked
-        self._place_cell_activations /= self._place_cell_activations.max()
 
     @property
     def A(self) -> np.ndarray:
