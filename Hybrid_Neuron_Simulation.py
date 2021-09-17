@@ -147,7 +147,7 @@ for t in range(setup['t_max']):
     trajectory[tuple(np.round(place_cell_peak + Δ).astype(int))] = 1.  # if direc == 0 this will be overwritten by the next line
     trajectory[tuple(place_cell_peak)] = -1.
 
-    if t % 1 == 1:
+    if t % 1 == 0:
         fire_grid = 1. * spiking_fired[0]
 
         # ########### Plots for animation ###################
@@ -196,4 +196,4 @@ for t in range(setup['t_max']):
         print('Figure closed. Finalizing simulation.')
         break
 
-# animation.save(selected_setup, fps=8, keep_frame_images=False)
+animation.save(selected_setup, fps=8, keep_frame_images=False)
