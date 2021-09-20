@@ -58,27 +58,39 @@ for t in range(setup['t_max']):
     for target_neuron in setup['target_neurons']:
         thalamic_input[(0, *target_neuron)] = I
 
-    continuous_attractor_layer.update(Δ / np.asarray(shape))
+    # update the continuous attractor, store the center position for computing the direction vector later
+    place_cell_peak = continuous_attractor_layer.update(Δ / np.asarray(shape))
 
+    # update the wave propagation layer, store the firing pattern
     spiking_fired = wave_propagation_layer.update(dt, thalamic_input)
 
-    place_cell_peak = continuous_attractor_layer.peak
-
     # layer interaction - compute direction vector
-    Δ = np.array([0, 0])
     if direc_update_delay <= 0:
+        # the continuous attractor is not in its recoverz period
         overlap = continuous_attractor_layer.A * spiking_fired[0]
         total = np.sum(overlap)
 
         if total > 0:
+            # there is some overlap --> compute a direction vector and start the recovery period
             distance = coords - place_cell_peak[np.newaxis, np.newaxis, :]
             Δ = np.sum(distance * overlap[..., np.newaxis], axis=(0, 1)) / total
             direc_update_delay = R
+        else:
+            # no overlap --> no direction vector
+            Δ = np.array([0, 0])
     else:
+        # recovery period is still running - do not set a direction vector
         direc_update_delay -= dt
+        Δ = np.array([0, 0])
 
+    # dump all data as images / videos, abort of figures have been closed  manually
     if not graphics.update(t, place_cell_peak, Δ, spiking_fired, wave_propagation_layer.v, continuous_attractor_layer.A, overlap):
         print('Figure closed. Finalizing simulation.')
+        break
+
+    # abort simulation after reaching the target
+    if tuple(place_cell_peak) in setup['target_neurons']:
+        print('Reached target. Finalizing simulation.')
         break
 
 graphics.save_video(fps=8, keep_frame_images=False)

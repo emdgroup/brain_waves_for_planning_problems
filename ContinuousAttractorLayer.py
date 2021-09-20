@@ -59,9 +59,10 @@ class ContinuousAttractorLayer:
             self._place_cell_activations *= self._place_cell_blocked
             self._place_cell_activations /= self._place_cell_activations.max()
 
-    def update(self, Δ: np.ndarray):
+    def update(self, Δ: np.ndarray) -> np.ndarray:
         self._update_place_cell_synapses(Δ)
         self._update_place_cell_activations()
+        return self.peak
 
     @property
     def A(self) -> np.ndarray:
