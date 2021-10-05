@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+authors: 
+  -
+    affiliation: "University of Glasgow, Scotland"
+    family-names: Powell
+    given-names: Henry
+  -
+    affiliation: "Merck KGaA, Darmstadt, Germany"
+    family-names: Winkel
+    given-names: Mathias
+cff-version: "1.1.0"
+license: "Apache-2.0"
+message: "If you use this software, please cite it using these metadata."
+repository-code: "https://github.com/emdgroup/brain_waves_for_planning_problems"
+title: "Hybrid Neuron Simulation"
+date-released: 2021-10-05
