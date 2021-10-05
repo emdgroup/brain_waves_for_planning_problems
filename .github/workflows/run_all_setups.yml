@@ -1,0 +1,55 @@
+# This workflow will install Python dependencies, and run the different setups
+name: Run All Setups
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  run-setups:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ 3.7 ]
+        setup: [ test, empty, simple, annihilation, s_maze, central_block, central_block_randomized, complex_maze ] 
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Setup FFMPEG
+      uses: FedericoCarboni/setup-ffmpeg@v1
+      with:
+        # Not strictly necessary, but it may prevent rate limit
+        # errors especially on GitHub-hosted macos machines.
+        token: ${{ secrets.GITHUB_TOKEN }}
+      id: setup-ffmpeg
+    - name: Run Setup
+      run: |
+        python Hybrid_Neuron_Simulation.py ${{ matrix.setup }}
+    - name: Upload Video
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ matrix.setup }}.mp4
+        path: ${{ matrix.setup }}.mp4
+        retention-days: 3
+    - name: Tar Images
+      run: |
+        set -x
+        tar -czvf ${{ matrix.setup }}.tar.gz ${{ matrix.setup }} ${{ matrix.setup }}.exci_inhi
+    - name: Upload Images
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ matrix.setup }}
+        path: ${{ matrix.setup }}.tar.gz
+        retention-days: 3

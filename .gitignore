@@ -10,3 +10,5 @@ simple*
 complex_maze*
 annihilation*
 test*
+*.prof
+*.lprof
