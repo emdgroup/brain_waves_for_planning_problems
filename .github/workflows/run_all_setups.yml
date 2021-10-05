@@ -37,3 +37,18 @@ jobs:
     - name: Run Setup
       run: |
         python Hybrid_Neuron_Simulation.py ${{ matrix.setup }}
+    - name: Upload Video
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ matrix.setup }}.mp4
+        path: ${{ matrix.setup }}.mp4
+    - name: Tar Images
+      run: |
+        set -x
+        tar -czvf ${{ matrix.setup }}.tar.gz ${{ matrix.setup }} ${{ matrix.setup }}.exci_inhi
+        popd
+    - name: Upload Images
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ matrix.setup }}
+        path: ${{ matrix.setup }}.tar.gz
