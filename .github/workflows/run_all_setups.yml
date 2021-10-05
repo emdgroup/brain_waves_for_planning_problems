@@ -42,6 +42,7 @@ jobs:
       with:
         name: ${{ matrix.setup }}.mp4
         path: ${{ matrix.setup }}.mp4
+        retention-days: 3
     - name: Tar Images
       run: |
         set -x
@@ -52,3 +53,4 @@ jobs:
       with:
         name: ${{ matrix.setup }}
         path: ${{ matrix.setup }}.tar.gz
+        retention-days: 3
