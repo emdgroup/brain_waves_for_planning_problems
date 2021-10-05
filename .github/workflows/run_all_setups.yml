@@ -1,0 +1,32 @@
+# This workflow will install Python dependencies, and run the different setups
+name: Run All Setups
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  run-setups:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ 3.7 ]
+        setup: [ test, empty, simple, annihilation, s_maze, central_block, central_block_randomized, complex_maze ] 
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Run Setup
+      run: |
+        python Hybrid_Neuron_Simulation.py ${{ matrix.setup }}
