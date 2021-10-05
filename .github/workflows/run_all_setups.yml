@@ -47,7 +47,6 @@ jobs:
       run: |
         set -x
         tar -czvf ${{ matrix.setup }}.tar.gz ${{ matrix.setup }} ${{ matrix.setup }}.exci_inhi
-        popd
     - name: Upload Images
       uses: actions/upload-artifact@v2
       with:
