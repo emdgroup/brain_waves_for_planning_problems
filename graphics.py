@@ -30,6 +30,7 @@ class Graphics:
         self.ax_pub2[1].set_title('Inhibitory Firing Pattern', fontsize=14)
 
         self.animation = FFMPEGVideo(name)
+        self.animation_pub = FFMPEGVideo(name + '_pub')
         self.pub_images = ImageStack(name)
         self.pub_images2 = ImageStack(name + '.exci_inhi')
 
@@ -115,10 +116,12 @@ class Graphics:
 
         plt.pause(0.1)
         self.animation.add_frame(self.fig_vid)
+        self.animation_pub.add_frame(self.fig_pub)
         self.pub_images.add_frame(self.fig_pub)
         self.pub_images2.add_frame(self.fig_pub2)
 
         return plt.fignum_exists(self.fig_vid.number)
 
-    def save_video(self, fps: int=8, keep_frame_images=False):
+    def save_video(self, fps: int = 8, keep_frame_images=False):
         self.animation.save(fps=fps, keep_frame_images=keep_frame_images)
+        self.animation_pub.save(fps=fps, keep_frame_images=keep_frame_images)

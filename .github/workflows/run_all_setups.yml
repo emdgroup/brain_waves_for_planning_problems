@@ -43,6 +43,12 @@ jobs:
         name: ${{ matrix.setup }}.mp4
         path: ${{ matrix.setup }}.mp4
         retention-days: 3
+    - name: Upload Video Pub
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ matrix.setup }}_pub.mp4
+        path: ${{ matrix.setup }}_pub.mp4
+        retention-days: 3
     - name: Tar Images
       run: |
         set -x
