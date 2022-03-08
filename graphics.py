@@ -15,6 +15,7 @@ class Graphics:
 
         plt.ion()
         self.fig_vid, self.ax_vid = plt.subplots(nrows=2, ncols=4, squeeze=True, figsize=(10, 6))
+        self.fig_vid.set_tight_layout(True)
         self.ax_vid[0, 0].set_title('Exci. Firing Pattern', fontsize=8)
         self.ax_vid[0, 1].set_title('Exci. SNN Membrane Potential', fontsize=8)
         self.ax_vid[0, 2].set_title('Inhi. Firing Pattern', fontsize=8)
@@ -25,8 +26,10 @@ class Graphics:
         self.ax_vid[1, 3].remove()
 
         self.fig_pub, self.ax_pub = plt.subplots(nrows=1, ncols=1, squeeze=True, figsize=(3, 3.25))
+        self.fig_pub.subplots_adjust(left=0.05, right=0.95, top=0.925, bottom=0.)
 
         self.fig_pub2, self.ax_pub2 = plt.subplots(nrows=1, ncols=2, squeeze=True, figsize=(6, 3))
+        self.fig_pub2.set_tight_layout(True)
         self.ax_pub2[0].set_title('Excitatory Firing Pattern', fontsize=14)
         self.ax_pub2[1].set_title('Inhibitory Firing Pattern', fontsize=14)
 
@@ -37,6 +40,8 @@ class Graphics:
 
         self.my_cmap = copy.copy(plt.cm.get_cmap('gray'))  # get a copy of the gray color map
         self.my_cmap.set_bad(alpha=0)  # set how the colormap handles 'bad' values
+
+        self.mask_cmap = ListedColormap([(0, 0, 0, 0), (0.3, 0.3, 0.3, 1.)])
 
     def _imupdate(self, ax, data, overlay=None, *args, **kwargs):
 
@@ -65,6 +70,13 @@ class Graphics:
                                       xytext=(-20, 50), textcoords='offset pixels',
                                       arrowprops=dict(arrowstyle="->")) for target_neuron in self._target_neurons]
 
+            ax.tick_params(length=0., width=0.)
+
+        ax.xaxis.set_ticks(np.arange(*ax.get_xlim(), 1))
+        ax.yaxis.set_ticks(np.arange(*ax.get_ylim(), 1))
+        ax.set_yticklabels([])
+        ax.set_xticklabels([])
+
         if hasattr(ax, 'myhatch'):
             for h in ax.myhatch:
                 if hasattr(h, 'remove'):
@@ -74,7 +86,7 @@ class Graphics:
                         ax.collections.remove(coll)
 
         ax.myhatch = [
-            ax.spy(mask, alpha=1., cmap=ListedColormap([(0, 0, 0, 0), (0.3, 0.3, 0.3, 1.)])),
+            ax.spy(mask, alpha=1., cmap=self.mask_cmap),
             #ax.matshow(mask),
             #ax.contour(mask, 1, levels=[0.999, ], colors=('k',), linestyles=('-',), linewidths=(2,)),
             ax.contourf(mask, 1, hatches=['', 'xx'], alpha=0),
@@ -99,30 +111,12 @@ class Graphics:
         self._imupdate(self.ax_vid[1, 1], overlap)
         self._imupdate(self.ax_vid[1, 2], self.trajectory, vmin=-1, vmax=1, cmap='bwr')
 
-        for ax in self.ax_vid.flatten():
-            ax.set_xticks([])
-            ax.set_yticks([])
-
-        self.fig_vid.tight_layout()
-
         # ########### Plots for publication ###################
         self.fig_pub.suptitle(f't = {t}ms', fontsize=24)
         self._imupdate(self.ax_pub, attractor_activity, cmap='Greys', overlay=fire_grid)
 
-        for ax in [self.ax_pub]:
-            ax.set_xticks([])
-            ax.set_yticks([])
-
-        self.fig_pub.tight_layout()
-
         self._imupdate(self.ax_pub2[0], fire_grid, vmin=0, vmax=2, cmap='Greys')
         self._imupdate(self.ax_pub2[1], 1 * spiking_fired[1], vmin=0, vmax=2, cmap='Greys')
-
-        for ax in self.ax_pub2.flatten():
-            ax.set_xticks([])
-            ax.set_yticks([])
-
-        self.fig_pub2.tight_layout()
 
         plt.show()
 
