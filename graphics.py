@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
 import numpy as np
 import copy
 from typing import Tuple
@@ -65,9 +66,20 @@ class Graphics:
                                       arrowprops=dict(arrowstyle="->")) for target_neuron in self._target_neurons]
 
         if hasattr(ax, 'myhatch'):
-            for coll in ax.myhatch.collections:
-                ax.collections.remove(coll)
-        ax.myhatch = ax.contourf(mask, 1, hatches=['', '////'], alpha=0)
+            for h in ax.myhatch:
+                if hasattr(h, 'remove'):
+                    h.remove()
+                elif hasattr(h, 'collections'):
+                    for coll in h.collections:
+                        ax.collections.remove(coll)
+
+        ax.myhatch = [
+            ax.spy(mask, alpha=1., cmap=ListedColormap([(0, 0, 0, 0), (0.3, 0.3, 0.3, 1.)])),
+            #ax.matshow(mask),
+            #ax.contour(mask, 1, levels=[0.999, ], colors=('k',), linestyles=('-',), linewidths=(2,)),
+            ax.contourf(mask, 1, hatches=['', 'xx'], alpha=0),
+            #ax.contourf(mask, 1, corner_mask=True, alpha=0),
+        ]
 
     def update(self, t, place_cell_peak, Δ, spiking_fired, membrane_potential, attractor_activity, overlap):
         # record trajectory for plotting
