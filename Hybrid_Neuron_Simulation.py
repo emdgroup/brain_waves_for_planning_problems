@@ -56,7 +56,7 @@ for t in range(setup['t_max']):
 
     # external drive
     for target_neuron in setup['target_neurons']:
-        thalamic_input[(0, *target_neuron)] = I
+        thalamic_input[(0, *reversed(target_neuron))] = I
 
     # update the continuous attractor, store the center position for computing the direction vector later
     place_cell_peak = continuous_attractor_layer.update(Δ / np.asarray(shape))

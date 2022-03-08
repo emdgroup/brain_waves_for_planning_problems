@@ -3,7 +3,7 @@ SETUPS = {
         'size': (41, 51),
         'blocked': tuple(),
         'start_neuron': (4, 4),
-        'target_neurons': ((36, 46), ),
+        'target_neurons': ((46, 36), ),
         't_max': 300,
         'randomize_neurons': False,
         'randomize_synapses': 0.,
