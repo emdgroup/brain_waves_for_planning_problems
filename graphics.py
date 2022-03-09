@@ -62,36 +62,25 @@ class Graphics:
             if overlay is not None:
                 ax.myoverlay.set_data(overlay_tmp)
         else:
-            ax.myplot = ax.imshow(data_plot, *args, **kwargs)
+            ax.myplot = ax.imshow(data_plot, *args, **kwargs, zorder=1)
             if overlay is not None:
-                ax.myoverlay = ax.imshow(overlay_tmp, vmin=0, vmax=2, cmap=self.my_cmap)
-            ax.myarrow = [ax.annotate("",
-                                      xy=(target_neuron[0]+.5, target_neuron[1]+.5),
-                                      xytext=(-20, 50), textcoords='offset pixels',
-                                      arrowprops=dict(arrowstyle="->")) for target_neuron in self._target_neurons]
+                ax.myoverlay = ax.imshow(overlay_tmp, vmin=0, vmax=2, cmap=self.my_cmap, zorder=1)
 
-            ax.tick_params(length=0., width=0.)
+            ax.decoration = [
+                ax.vlines(np.arange(*ax.get_xlim(), 1), *ax.get_ylim(), colors='w', linestyles='-', linewidth=0.25, zorder=2),
+                ax.hlines(np.arange(*ax.get_ylim(), -1), *ax.get_xlim(), colors='w', linestyles='-', linewidth=0.25, zorder=2),
+                ax.imshow(mask, alpha=1., cmap=self.mask_cmap, zorder=3),
+                ax.contourf(mask, 1, hatches=['', 'xx'], alpha=0, zorder=4),
+                [ax.annotate("",
+                             xy=(target_neuron[0]+.25, target_neuron[1]+.75),
+                             xytext=(-20, 50), textcoords='offset pixels',
+                             zorder=4,
+                             arrowprops=dict(arrowstyle="->")) for target_neuron in self._target_neurons]
+             ]
 
-        ax.xaxis.set_ticks(np.arange(*ax.get_xlim(), 1))
-        ax.yaxis.set_ticks(np.arange(*ax.get_ylim(), 1))
-        ax.set_yticklabels([])
-        ax.set_xticklabels([])
+        ax.xaxis.set_ticks([])
+        ax.yaxis.set_ticks([])
 
-        if hasattr(ax, 'myhatch'):
-            for h in ax.myhatch:
-                if hasattr(h, 'remove'):
-                    h.remove()
-                elif hasattr(h, 'collections'):
-                    for coll in h.collections:
-                        ax.collections.remove(coll)
-
-        ax.myhatch = [
-            ax.spy(mask, alpha=1., cmap=self.mask_cmap),
-            #ax.matshow(mask),
-            #ax.contour(mask, 1, levels=[0.999, ], colors=('k',), linestyles=('-',), linewidths=(2,)),
-            ax.contourf(mask, 1, hatches=['', 'xx'], alpha=0),
-            #ax.contourf(mask, 1, corner_mask=True, alpha=0),
-        ]
 
     def update(self, t, place_cell_peak, Δ, spiking_fired, membrane_potential, attractor_activity, overlap):
         # record trajectory for plotting
