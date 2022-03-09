@@ -67,8 +67,10 @@ class Graphics:
                 ax.myoverlay = ax.imshow(overlay_tmp, vmin=0, vmax=2, cmap=self.my_cmap, zorder=1)
 
             ax.decoration = [
-                ax.vlines(np.arange(*ax.get_xlim(), 1), *ax.get_ylim(), colors='w', linestyles='-', linewidth=0.25, zorder=2),
-                ax.hlines(np.arange(*ax.get_ylim(), -1), *ax.get_xlim(), colors='w', linestyles='-', linewidth=0.25, zorder=2),
+                ax.vlines(np.arange(*ax.get_xlim(), 1), *ax.get_ylim(),
+                          colors=[(0.8, 0.8, 0.8, 0.75)], linestyles='-', linewidth=0.25, zorder=2),
+                ax.hlines(np.arange(*ax.get_ylim(), -1), *ax.get_xlim(),
+                          colors=[(0.8, 0.8, 0.8, 0.75)], linestyles='-', linewidth=0.25, zorder=2),
                 ax.imshow(mask, alpha=1., cmap=self.mask_cmap, zorder=3),
                 ax.contourf(mask, 1, hatches=['', 'xx'], alpha=0, zorder=4),
                 [ax.annotate("",
