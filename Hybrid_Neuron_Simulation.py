@@ -25,7 +25,7 @@ J = 12    # continuous attractor synaptic connection strength
 T = 0.05  # continuous attractor Gaussian shift
 σ = 0.03  # continuous attractor Gaussian width
 τ = 0.8   # continuous attractor stabilization strength
-R = 12    # continuous attractor movement recovery period
+R = setup.get('R', 12)    # continuous attractor movement recovery period
 
 I = 25  # external DC current to stimulate selected wave propagation layer neurons
 dt = 1  # simulation timestep

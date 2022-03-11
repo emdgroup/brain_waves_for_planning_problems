@@ -73,8 +73,9 @@ SETUPS = {
         'target_neurons': ((36, 36), ),
         't_max': 750,
         'randomize_neurons': True,
-        'randomize_synapses': 0.5,
+        'randomize_synapses': 0.1,
         'thalamic_input': False,
+        'R': 12,
         },
     'complex_maze': {
         'size': (60, 60),
