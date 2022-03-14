@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
 import numpy as np
 import copy
 from typing import Tuple
@@ -14,6 +15,7 @@ class Graphics:
 
         plt.ion()
         self.fig_vid, self.ax_vid = plt.subplots(nrows=2, ncols=4, squeeze=True, figsize=(10, 6))
+        self.fig_vid.set_tight_layout(True)
         self.ax_vid[0, 0].set_title('Exci. Firing Pattern', fontsize=8)
         self.ax_vid[0, 1].set_title('Exci. SNN Membrane Potential', fontsize=8)
         self.ax_vid[0, 2].set_title('Inhi. Firing Pattern', fontsize=8)
@@ -24,8 +26,10 @@ class Graphics:
         self.ax_vid[1, 3].remove()
 
         self.fig_pub, self.ax_pub = plt.subplots(nrows=1, ncols=1, squeeze=True, figsize=(3, 3.25))
+        self.fig_pub.subplots_adjust(left=0.05, right=0.95, top=0.925, bottom=0.)
 
         self.fig_pub2, self.ax_pub2 = plt.subplots(nrows=1, ncols=2, squeeze=True, figsize=(6, 3))
+        self.fig_pub2.set_tight_layout(True)
         self.ax_pub2[0].set_title('Excitatory Firing Pattern', fontsize=14)
         self.ax_pub2[1].set_title('Inhibitory Firing Pattern', fontsize=14)
 
@@ -36,6 +40,8 @@ class Graphics:
 
         self.my_cmap = copy.copy(plt.cm.get_cmap('gray'))  # get a copy of the gray color map
         self.my_cmap.set_bad(alpha=0)  # set how the colormap handles 'bad' values
+
+        self.mask_cmap = ListedColormap([(0, 0, 0, 0), (0.3, 0.3, 0.3, 1.)])
 
     def _imupdate(self, ax, data, overlay=None, *args, **kwargs):
 
@@ -56,18 +62,27 @@ class Graphics:
             if overlay is not None:
                 ax.myoverlay.set_data(overlay_tmp)
         else:
-            ax.myplot = ax.imshow(data_plot, *args, **kwargs)
+            ax.myplot = ax.imshow(data_plot, *args, **kwargs, zorder=1)
             if overlay is not None:
-                ax.myoverlay = ax.imshow(overlay_tmp, vmin=0, vmax=2, cmap=self.my_cmap)
-            ax.myarrow = [ax.annotate("",
-                                      xy=(target_neuron[0]+.5, target_neuron[1]+.5),
-                                      xytext=(-20, 50), textcoords='offset pixels',
-                                      arrowprops=dict(arrowstyle="->")) for target_neuron in self._target_neurons]
+                ax.myoverlay = ax.imshow(overlay_tmp, vmin=0, vmax=2, cmap=self.my_cmap, zorder=1)
 
-        if hasattr(ax, 'myhatch'):
-            for coll in ax.myhatch.collections:
-                ax.collections.remove(coll)
-        ax.myhatch = ax.contourf(mask, 1, hatches=['', '////'], alpha=0)
+            ax.decoration = [
+                ax.vlines(np.arange(*ax.get_xlim(), 1), *ax.get_ylim(),
+                          colors=[(0.8, 0.8, 0.8, 0.75)], linestyles='-', linewidth=0.25, zorder=2),
+                ax.hlines(np.arange(*ax.get_ylim(), -1), *ax.get_xlim(),
+                          colors=[(0.8, 0.8, 0.8, 0.75)], linestyles='-', linewidth=0.25, zorder=2),
+                ax.imshow(mask, alpha=1., cmap=self.mask_cmap, zorder=3),
+                ax.contourf(mask, 1, hatches=['', 'xx'], alpha=0, zorder=4),
+                [ax.annotate("",
+                             xy=(target_neuron[0]+.25, target_neuron[1]+.75),
+                             xytext=(-20, 50), textcoords='offset pixels',
+                             zorder=4,
+                             arrowprops=dict(arrowstyle="->")) for target_neuron in self._target_neurons]
+             ]
+
+        ax.xaxis.set_ticks([])
+        ax.yaxis.set_ticks([])
+
 
     def update(self, t, place_cell_peak, Δ, spiking_fired, membrane_potential, attractor_activity, overlap):
         # record trajectory for plotting
@@ -87,30 +102,12 @@ class Graphics:
         self._imupdate(self.ax_vid[1, 1], overlap)
         self._imupdate(self.ax_vid[1, 2], self.trajectory, vmin=-1, vmax=1, cmap='bwr')
 
-        for ax in self.ax_vid.flatten():
-            ax.set_xticks([])
-            ax.set_yticks([])
-
-        self.fig_vid.tight_layout()
-
         # ########### Plots for publication ###################
         self.fig_pub.suptitle(f't = {t}ms', fontsize=24)
         self._imupdate(self.ax_pub, attractor_activity, cmap='Greys', overlay=fire_grid)
 
-        for ax in [self.ax_pub]:
-            ax.set_xticks([])
-            ax.set_yticks([])
-
-        self.fig_pub.tight_layout()
-
         self._imupdate(self.ax_pub2[0], fire_grid, vmin=0, vmax=2, cmap='Greys')
         self._imupdate(self.ax_pub2[1], 1 * spiking_fired[1], vmin=0, vmax=2, cmap='Greys')
-
-        for ax in self.ax_pub2.flatten():
-            ax.set_xticks([])
-            ax.set_yticks([])
-
-        self.fig_pub2.tight_layout()
 
         plt.show()
 
