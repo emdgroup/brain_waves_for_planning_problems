@@ -6,12 +6,6 @@ Please use Python version 3.6 at least.
 Required packages are listed in `requirements.txt` and can be installed using `pip` via `pip install -r requirements.txt`.
 Furthermore, you need to install `ffmpeg` and add its binary directory to your `$PATH` environment variable.
 
-
-# Installing Required Python Packages
-Please use Python version 3.6 at least.
-Required packages are listed in `requirements.txt` and can be installed using `pip` via `pip install -r requirements.txt`.
-Furthermore, you need to install `ffmpeg` and add its binary directory to your `$PATH` environment variable.
-
 # Running the code
 On your commandline, just invoke `python Hybrid_Neuron_Simulation.py` to run an example simulation.
 Results will be visualized in several plot windows, that will be live updated.
